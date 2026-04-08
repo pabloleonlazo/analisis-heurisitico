@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico — PLP Desktop</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: #f8f7f5; color: #1a1a1a; }
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated { position: relative; }
+.ann-badge {
+  display: none; position: absolute; z-index: 500;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-size: 13px; font-weight: 700; color: #fff;
+  align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  border: 2px solid rgba(255,255,255,0.9);
+  top: -10px; right: -10px;
+}
+.ann-badge:hover { transform: scale(1.2); box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+.ann-badge.active-badge { transform: scale(1.25); box-shadow: 0 0 0 4px rgba(255,255,255,0.5); }
+.annotations-on .ann-badge { display: flex; }
+.annotations-on .annotated { outline: 2px dashed; outline-offset: 2px; }
+
+.h-friccion    { background: #DC2626; }
+.h-distraccion { background: #7C3AED; }
+.h-claridad    { background: #D97706; }
+.h-valor       { background: #059669; }
+
+.ann-friccion    { outline-color: #DC262640 !important; }
+.ann-distraccion { outline-color: #7C3AED40 !important; }
+.ann-claridad    { outline-color: #D9770640 !important; }
+.ann-valor       { outline-color: #05996940 !important; }
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel {
+  position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+  background: #fff; border-left: 1px solid #e5e5e5;
+  z-index: 1000; transition: right 0.3s ease;
+  overflow-y: auto; display: flex; flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+}
+#ann-panel.open { right: 0; }
+#panel-header {
+  padding: 20px 20px 16px; border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 2;
+}
+#panel-header h3 { font-size: 14px; font-weight: 600; color: #888; letter-spacing: 0.05em; text-transform: uppercase; }
+#close-panel {
+  cursor: pointer; width: 32px; height: 32px; border-radius: 50%;
+  background: #f4f4f4; border: none; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; color: #555; line-height: 1; transition: background 0.15s;
+}
+#close-panel:hover { background: #e8e8e8; }
+#panel-body { padding: 20px; flex: 1; }
+.panel-heuristic-tag {
+  display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 12px;
+}
+#panel-number { font-size: 40px; font-weight: 300; color: #ddd; line-height: 1; margin-bottom: 4px; }
+#panel-section { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 16px; line-height: 1.3; }
+.panel-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #aaa; margin-bottom: 6px; margin-top: 16px;
+}
+.panel-text { font-size: 14px; line-height: 1.65; color: #444; }
+.severity-row { display: flex; gap: 4px; margin-top: 6px; }
+.sev-dot { width: 10px; height: 10px; border-radius: 50%; background: #e5e5e5; }
+#panel-nav {
+  display: flex; gap: 8px; padding: 16px 20px;
+  border-top: 1px solid #f0f0f0; position: sticky; bottom: 0; background: #fff;
+}
+#panel-nav button {
+  flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #e5e5e5;
+  background: #fff; font-size: 13px; cursor: pointer; color: #555; transition: background 0.15s;
+}
+#panel-nav button:hover { background: #f5f5f5; }
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 900; }
+#overlay.show { display: block; }
+
+/* ─── TOOLBAR ────────────────────────────────────────────────── */
+#lab-toolbar {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #1a1a1a; border-radius: 40px; padding: 10px 20px;
+  display: flex; align-items: center; gap: 16px;
+  z-index: 800; box-shadow: 0 8px 32px rgba(0,0,0,0.25); white-space: nowrap;
+}
+#lab-toolbar span { font-size: 12px; color: #aaa; font-weight: 500; letter-spacing: 0.04em; }
+#toggle-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: #2d2d2d; border: 1px solid #444; border-radius: 24px; padding: 6px 16px;
+  cursor: pointer; color: #fff; font-size: 13px; font-weight: 500; transition: all 0.2s;
+}
+#toggle-btn:hover { background: #3a3a3a; }
+#toggle-btn.on { background: #6D28D9; border-color: #7C3AED; }
+.toggle-dot { width: 8px; height: 8px; border-radius: 50%; background: #666; transition: background 0.2s; }
+#toggle-btn.on .toggle-dot { background: #c4b5fd; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #bbb; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sep { width: 1px; height: 20px; background: #333; }
+
+/* ─── PAGE ───────────────────────────────────────────────────── */
+#promo-bar {
+  background: #111; color: #fff; text-align: center; padding: 9px 20px;
+  font-size: 13px; letter-spacing: 0.02em;
+}
+#promo-bar a { color: #fcd34d; text-decoration: underline; margin-left: 4px; font-weight: 500; }
+
+nav {
+  background: #fff; border-bottom: 1px solid #eee; padding: 0 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px; position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { font-family: 'DM Serif Display', serif; font-size: 22px; }
+.nav-links { display: flex; gap: 24px; list-style: none; }
+.nav-links a { font-size: 13px; color: #555; text-decoration: none; font-weight: 500; transition: color 0.15s; }
+.nav-links a:hover { color: #111; }
+.nav-links a.active { color: #111; border-bottom: 2px solid #111; padding-bottom: 2px; }
+.nav-icons { display: flex; gap: 16px; align-items: center; }
+.nav-icon-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: #555; display: flex; align-items: center; gap: 4px; }
+.cart-badge { background: #DC2626; color: #fff; border-radius: 10px; font-size: 10px; padding: 1px 5px; margin-left: 2px; }
+
+.page-wrapper { max-width: 1280px; margin: 0 auto; padding: 28px 40px 120px; }
+.breadcrumb { font-size: 12px; color: #aaa; margin-bottom: 20px; }
+.breadcrumb span { color: #111; }
+.plp-title { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+.plp-subtitle { font-size: 13px; color: #aaa; margin-bottom: 24px; }
+
+/* PLP layout */
+.plp-layout { display: grid; grid-template-columns: 240px 1fr; gap: 36px; align-items: start; }
+
+/* Sidebar */
+.filter-sidebar { background: #fff; border: 1px solid #f0f0f0; border-radius: 12px; overflow: hidden; position: sticky; top: 80px; }
+.filter-sidebar-header {
+  font-size: 13px; font-weight: 600; color: #888; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 16px 16px 12px; border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.filter-sidebar-header button { font-size: 11px; color: #aaa; background: none; border: none; cursor: pointer; }
+
+/* Active filters area — empty = issue #3 */
+.active-filters-area {
+  padding: 12px 16px; min-height: 44px; border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+}
+.active-filters-empty { font-size: 12px; color: #ccc; font-style: italic; }
+
+/* Filter groups — all collapsed = issue #2 */
+.filter-group { border-bottom: 1px solid #f0f0f0; }
+.filter-group:last-child { border-bottom: none; }
+.fg-trigger {
+  width: 100%; padding: 13px 16px; background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 500; color: #333; text-align: left;
+}
+.fg-trigger .fg-meta { font-size: 11px; color: #ccc; margin-right: 4px; }
+.fg-content { padding: 4px 16px 14px; display: none; }
+.filter-group.open .fg-content { display: block; }
+.chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.f-chip {
+  padding: 5px 10px; border: 1px solid #e0e0e0; border-radius: 20px;
+  font-size: 12px; cursor: pointer; transition: all 0.15s; color: #444;
+}
+.f-chip:hover { border-color: #999; }
+.f-chip.on { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.price-range { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.price-range input { width: 80px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; }
+.price-range span { font-size: 12px; color: #aaa; }
+
+/* Sort bar */
+.sort-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid #eee; margin-bottom: 20px;
+}
+.sort-left { display: flex; align-items: center; gap: 16px; }
+.result-count { font-size: 14px; color: #888; }
+.result-count strong { color: #1a1a1a; }
+
+/* View toggle — ausente = issue #10 (solo visible con anotaciones) */
+.view-toggle-ghost {
+  display: none; align-items: center; gap: 6px; padding: 5px 10px;
+  border-radius: 6px; background: rgba(220,38,38,0.05);
+  border: 1px dashed #DC2626; font-size: 11px; color: #DC2626; font-weight: 600;
+}
+.annotations-on .view-toggle-ghost { display: flex; }
+
+.sort-right { display: flex; align-items: center; gap: 10px; }
+.sort-label-txt { font-size: 13px; color: #888; }
+.sort-select {
+  padding: 7px 28px 7px 10px; border: 1px solid #e0e0e0; border-radius: 8px;
+  font-size: 13px; color: #333; background: #fff; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+
+/* Product grid */
+.product-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 36px; }
+
+.product-card {
+  background: #fff; border-radius: 10px; border: 1px solid #f0f0f0;
+  overflow: hidden; cursor: pointer; transition: box-shadow 0.2s;
+}
+.product-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+/* No hover image swap, no quick-add = issues #5 & #8 */
+.card-img {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+/* No badge on card image = issue #6 */
+.card-img svg { width: 90px; opacity: 0.35; }
+.card-body { padding: 12px; }
+.card-name { font-size: 13px; font-weight: 500; line-height: 1.3; margin-bottom: 6px; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-swatches { display: flex; gap: 5px; margin-bottom: 8px; }
+.c-swatch { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.08); }
+.card-rating { font-size: 11px; color: #F59E0B; margin-bottom: 6px; }
+.card-rating span { color: #aaa; }
+/* Price without anchor = issue #7 */
+.card-price { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+
+/* Pagination = issue #8 */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding-top: 24px; border-top: 1px solid #f0f0f0; }
+.pg-btn {
+  width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e0e0e0;
+  background: #fff; font-size: 13px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; color: #555; transition: all 0.15s;
+}
+.pg-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.pg-btn:hover:not(.active) { border-color: #999; }
+.pg-ellipsis { font-size: 14px; color: #bbb; padding: 0 4px; }
+
+/* Shoe SVG helper */
+.shoe-path-1 { } .shoe-path-2 { } .shoe-path-3 { }
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="lab-toolbar">
+  <span>🔬 LAB HEURÍSTICO — PLP</span>
+  <div class="sep"></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()">
+    <div class="toggle-dot"></div>
+    Ver anotaciones
+  </button>
+</div>
+
+<div id="overlay" onclick="closePanel()"></div>
+<div id="ann-panel">
+  <div id="panel-header">
+    <h3>Issue heurístico</h3>
+    <button id="close-panel" onclick="closePanel()">×</button>
+  </div>
+  <div id="panel-body">
+    <div id="panel-number">#1</div>
+    <div id="panel-heuristic-tag" class="panel-heuristic-tag"></div>
+    <div id="panel-section"></div>
+    <div class="panel-label">Problema identificado</div>
+    <div id="panel-problema" class="panel-text"></div>
+    <div class="panel-label">Hipótesis de mejora</div>
+    <div id="panel-hipotesis" class="panel-text"></div>
+    <div class="panel-label">Severidad</div>
+    <div class="severity-row" id="panel-severity"></div>
+  </div>
+  <div id="panel-nav">
+    <button onclick="navigateAnnotation(-1)">← Anterior</button>
+    <button onclick="navigateAnnotation(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ISSUE #1: Promo bar no contextual → Distracción -->
+<div class="annotated ann-distraccion" id="ann-target-1">
+  <div id="promo-bar">
+    20% de descuento en toda la línea de trail running este fin de semana.
+    <a href="#">Ver oferta</a>
+  </div>
+  <span class="ann-badge h-distraccion" onclick="openPanel(1)">1</span>
+</div>
+
+<nav>
+  <div class="nav-logo">STRYDE</div>
+  <ul class="nav-links">
+    <li><a href="#">Hombres</a></li>
+    <li><a href="#">Mujeres</a></li>
+    <li><a href="#" class="active">Running</a></li>
+    <li><a href="#">Trail</a></li>
+    <li><a href="#">Gym</a></li>
+    <li><a href="#">Sale</a></li>
+    <li><a href="#">Blog</a></li>
+  </ul>
+  <div class="nav-icons">
+    <button class="nav-icon-btn">🔍 Buscar</button>
+    <button class="nav-icon-btn">♡ Guardados</button>
+    <button class="nav-icon-btn">👤 Cuenta</button>
+    <button class="nav-icon-btn">🛒 Carrito <span class="cart-badge">2</span></button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+  <div class="breadcrumb">Inicio › <span>Running</span></div>
+  <div class="plp-title">Zapatillas Running</div>
+  <div class="plp-subtitle">47 modelos disponibles — Temporada actual</div>
+
+  <div class="plp-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <!-- ISSUE #2: Filtros colapsados sin preview → Fricción -->
+    <div class="annotated ann-friccion" id="ann-target-2">
+      <div class="filter-sidebar">
+        <div class="filter-sidebar-header">
+          Filtros
+          <button>Limpiar todo</button>
+        </div>
+
+        <!-- ISSUE #3: Active filters — vacío → Claridad -->
+        <div class="annotated ann-claridad" id="ann-target-3">
+          <div class="active-filters-area">
+            <span class="active-filters-empty">Sin filtros activos</span>
+          </div>
+          <span class="ann-badge h-claridad" style="top:-8px;right:-8px;" onclick="openPanel(3)">3</span>
+        </div>
+
+        <div class="filter-group">
+          <button class="fg-trigger">Género <span class="fg-meta"></span><span>＋</span></button>
+          <div class="fg-content"><div class="chip-grid">
+            <span class="f-chip">Hombre</span><span class="f-chip">Mujer</span><span class="f-chip">Unisex</span>
+          </div></div>
+        </div>
+        <div class="filter-group">
+          <button class="fg-trigger">Talla EU <span class="fg-meta"></span><span>＋</span></button>
+          <div class="fg-content"><div class="chip-grid">
+            <span class="f-chip">37</span><span class="f-chip">38</span><span class="f-chip">39</span>
+            <span class="f-chip">40</span><span class="f-chip">41</span><span class="f-chip">42</span>
+            <span class="f-chip">43</span><span class="f-chip">44</span><span class="f-chip">45</span>
+          </div></div>
+        </div>
+        <div class="filter-group">
+          <button class="fg-trigger">Color <span class="fg-meta"></span><span>＋</span></button>
+          <div class="fg-content"><div class="chip-grid">
+            <span class="f-chip">Negro</span><span class="f-chip">Blanco</span><span class="f-chip">Azul</span>
+            <span class="f-chip">Rojo</span><span class="f-chip">Verde</span><span class="f-chip">Gris</span>
+          </div></div>
+        </div>
+        <div class="filter-group">
+          <button class="fg-trigger">Precio <span class="fg-meta"></span><span>＋</span></button>
+          <div class="fg-content">
+            <div class="price-range">
+              <input type="text" placeholder="$0">
+              <span>—</span>
+              <input type="text" placeholder="$300K">
+            </div>
+          </div>
+        </div>
+        <div class="filter-group">
+          <button class="fg-trigger">Tipo de pisada <span class="fg-meta"></span><span>＋</span></button>
+          <div class="fg-content"><div class="chip-grid">
+            <span class="f-chip">Neutra</span><span class="f-chip">Pronadora</span><span class="f-chip">Supinadora</span>
+          </div></div>
+        </div>
+        <div class="filter-group">
+          <button class="fg-trigger">Marca <span class="fg-meta"></span><span>＋</span></button>
+          <div class="fg-content"><div class="chip-grid">
+            <span class="f-chip">STRYDE</span><span class="f-chip">ProRun</span><span class="f-chip">VeloX</span>
+          </div></div>
+        </div>
+      </div>
+      <span class="ann-badge h-friccion" style="top:-10px;right:-10px;" onclick="openPanel(2)">2</span>
+    </div>
+
+    <!-- ── MAIN ── -->
+    <div>
+      <!-- SORT BAR -->
+      <div class="sort-bar">
+        <div class="sort-left">
+          <!-- ISSUE #9: Result count sin feedback al filtrar → Claridad -->
+          <div class="annotated ann-claridad" id="ann-target-9" style="position:relative;">
+            <div class="result-count"><strong>47</strong> productos</div>
+            <span class="ann-badge h-claridad" onclick="openPanel(9)">9</span>
+          </div>
+          <!-- ISSUE #10: View toggle ausente → Fricción -->
+          <div class="annotated ann-friccion" id="ann-target-10" style="position:relative;">
+            <div class="view-toggle-ghost">⊞ Sin toggle grilla / lista</div>
+            <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(10)">10</span>
+          </div>
+        </div>
+        <div class="sort-right">
+          <span class="sort-label-txt">Ordenar por</span>
+          <!-- ISSUE #4: Ordenamiento opaco 'Relevancia' → Claridad -->
+          <div class="annotated ann-claridad" id="ann-target-4" style="position:relative;">
+            <select class="sort-select">
+              <option selected>Relevancia</option>
+              <option>Precio: menor a mayor</option>
+              <option>Precio: mayor a menor</option>
+              <option>Novedades</option>
+              <option>Mejor valorados</option>
+            </select>
+            <span class="ann-badge h-claridad" style="top:-10px;right:-6px;" onclick="openPanel(4)">4</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCT GRID -->
+      <div class="product-grid">
+
+        <!-- Card 1: issue #5 — sin hover state ni quick-add -->
+        <div class="annotated ann-friccion" id="ann-target-5">
+          <div class="product-card">
+            <div class="card-img" style="background:#f0efed;">
+              <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#777"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#999"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#555"/></svg>
+            </div>
+            <div class="card-body">
+              <div class="card-name">Running Pro V2</div>
+              <div class="card-swatches"><div class="c-swatch" style="background:#1a1a1a;"></div><div class="c-swatch" style="background:#4B5563;"></div><div class="c-swatch" style="background:#1E40AF;"></div></div>
+              <div class="card-rating">★★★★☆ <span>(127)</span></div>
+              <div class="card-price">$189.000</div>
+            </div>
+          </div>
+          <span class="ann-badge h-friccion" onclick="openPanel(5)">5</span>
+        </div>
+
+        <!-- Card 2: issue #6 — sin badges de urgencia/popularidad -->
+        <div class="annotated ann-valor" id="ann-target-6">
+          <div class="product-card">
+            <div class="card-img" style="background:#eef0f4;">
+              <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#3B5998"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#5B7DC0"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#2D4A7A"/></svg>
+            </div>
+            <div class="card-body">
+              <div class="card-name">Trail Blazer X3</div>
+              <div class="card-swatches"><div class="c-swatch" style="background:#1E40AF;"></div><div class="c-swatch" style="background:#EA580C;"></div></div>
+              <div class="card-rating">★★★★★ <span>(89)</span></div>
+              <div class="card-price">$215.000</div>
+            </div>
+          </div>
+          <span class="ann-badge h-valor" onclick="openPanel(6)">6</span>
+        </div>
+
+        <!-- Card 3: issue #7 — precio sin ancla de valor -->
+        <div class="annotated ann-valor" id="ann-target-7">
+          <div class="product-card">
+            <div class="card-img" style="background:#f0f4ee;">
+              <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#4D7C0F"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#65A30D"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#3A5C0A"/></svg>
+            </div>
+            <div class="card-body">
+              <div class="card-name">Speed Lite 500</div>
+              <div class="card-swatches"><div class="c-swatch" style="background:#4D7C0F;"></div><div class="c-swatch" style="background:#1a1a1a;"></div></div>
+              <div class="card-rating">★★★★☆ <span>(54)</span></div>
+              <div class="card-price">$159.000</div>
+            </div>
+          </div>
+          <span class="ann-badge h-valor" onclick="openPanel(7)">7</span>
+        </div>
+
+        <!-- Cards 4–8: sin annotation específica -->
+        <div class="product-card"><div class="card-img" style="background:#f5f3f0;"><svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#ccc"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#ddd"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#bbb"/></svg></div><div class="card-body"><div class="card-name">Recover Foam</div><div class="card-swatches"><div class="c-swatch" style="background:#e5e5e5;border-color:#ccc;"></div><div class="c-swatch" style="background:#6B7280;"></div></div><div class="card-rating">★★★★☆ <span>(203)</span></div><div class="card-price">$99.000</div></div></div>
+
+        <div class="product-card"><div class="card-img" style="background:#f2f2f0;"><svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#6B7280"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#F59E0B"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#4B5563"/></svg></div><div class="card-body"><div class="card-name">All-Road V4</div><div class="card-swatches"><div class="c-swatch" style="background:#6B7280;"></div><div class="c-swatch" style="background:#F59E0B;"></div></div><div class="card-rating">★★★★☆ <span>(76)</span></div><div class="card-price">$199.000</div></div></div>
+
+        <div class="product-card"><div class="card-img" style="background:#f4eeed;"><svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#DC2626"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#EF4444"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#B91C1C"/></svg></div><div class="card-body"><div class="card-name">Marathon Elite</div><div class="card-swatches"><div class="c-swatch" style="background:#DC2626;"></div><div class="c-swatch" style="background:#1a1a1a;"></div></div><div class="card-rating">★★★★★ <span>(41)</span></div><div class="card-price">$249.000</div></div></div>
+
+        <div class="product-card"><div class="card-img" style="background:#f5f2ee;"><svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#C2A882"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#D4BFA0"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#A89068"/></svg></div><div class="card-body"><div class="card-name">City Runner S1</div><div class="card-swatches"><div class="c-swatch" style="background:#C2A882;"></div><div class="c-swatch" style="background:#e5e5e5;border-color:#ccc;"></div></div><div class="card-rating">★★★★☆ <span>(112)</span></div><div class="card-price">$139.000</div></div></div>
+
+        <div class="product-card"><div class="card-img" style="background:#eef2f0;"><svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#1a1a1a"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#059669"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#111"/></svg></div><div class="card-body"><div class="card-name">Max Cushion T2</div><div class="card-swatches"><div class="c-swatch" style="background:#1a1a1a;"></div><div class="c-swatch" style="background:#059669;"></div></div><div class="card-rating">★★★★☆ <span>(67)</span></div><div class="card-price">$179.000</div></div></div>
+
+      </div><!-- /product-grid -->
+
+      <!-- ISSUE #8: Paginación numérica → Fricción -->
+      <div class="annotated ann-friccion" id="ann-target-8">
+        <div class="pagination">
+          <button class="pg-btn">‹</button>
+          <button class="pg-btn active">1</button>
+          <button class="pg-btn">2</button>
+          <button class="pg-btn">3</button>
+          <span class="pg-ellipsis">…</span>
+          <button class="pg-btn">6</button>
+          <button class="pg-btn">›</button>
+        </div>
+        <span class="ann-badge h-friccion" style="top:-10px;right:0;" onclick="openPanel(8)">8</span>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /plp-layout -->
+</div><!-- /page-wrapper -->
+
+<script>
+const annotations = {
+  1: {
+    heuristic:"Distracción", color:"#7C3AED",
+    section:"Barra promocional no contextual",
+    problema:"La promo anuncia '20% en trail running' en un listado de Running. El mensaje es irrelevante al contexto de búsqueda del usuario y actúa como ruta de fuga: puede llevarlo a la categoría de trail justo cuando estaba evaluando running, reduciendo la probabilidad de conversión en la categoría activa.",
+    hipotesis:"Mostrar promos contextuales a la categoría activa ('Envío gratis en running este mes') o suprimir la barra en páginas de listado para evitar rutas de fuga antes de que el usuario complete su exploración y convierta.",
+    severidad:2
+  },
+  2: {
+    heuristic:"Fricción", color:"#DC2626",
+    section:"Filtros completamente colapsados al cargar",
+    problema:"Todos los grupos de filtros están cerrados por defecto. Los labels ('Género', 'Talla', 'Color', 'Precio') no muestran cuántas opciones contienen ni cuáles son las más relevantes. El usuario tiene que expandir cada sección para descubrir las opciones disponibles, añadiendo pasos innecesarios al flujo de búsqueda.",
+    hipotesis:"Expandir por defecto los 2–3 filtros de mayor uso para la categoría (en zapatillas: Talla y Color). Agregar un contador de opciones en cada label: 'Talla (9)'. Mostrar un preview de las primeras 4 opciones sin necesitar expandir. El filtro más usado debe ser el más accesible.",
+    severidad:2
+  },
+  3: {
+    heuristic:"Claridad", color:"#D97706",
+    section:"Filtros activos sin chips visibles sobre la grilla",
+    problema:"Cuando el usuario aplica filtros no aparece ningún indicador visible sobre los resultados. La única manera de saber qué está filtrado es abrir cada sección del sidebar. Esto genera confusión sobre el estado actual de búsqueda, dificulta eliminar filtros individuales y hace que el usuario pierda la noción de por qué está viendo esos resultados.",
+    hipotesis:"Mostrar chips removibles sobre la grilla al aplicar cada filtro: 'Talla: 39 ×' | 'Color: Negro ×' | 'Limpiar todo'. Cada chip permite eliminar ese filtro de inmediato sin abrir el sidebar. El estado de filtrado debe ser visible y controlable desde la zona de resultados.",
+    severidad:3
+  },
+  4: {
+    heuristic:"Claridad", color:"#D97706",
+    section:"Ordenamiento por defecto opaco ('Relevancia')",
+    problema:"'Relevancia' como criterio de ordenamiento es completamente opaco: el usuario no puede saber si significa popularidad, margen comercial, stock disponible o frecuencia de compra. Esta opacidad genera desconfianza en los resultados y la percepción de que el orden responde a intereses comerciales más que a la búsqueda del usuario.",
+    hipotesis:"Renombrar el criterio por defecto a algo verificable: 'Más vendidos' o 'Mejor valorados'. Agregar un tooltip que explique el criterio activo. Considerar 'Novedades' como default en lanzamientos de temporada. La transparencia en el ordenamiento aumenta la confianza y la permanencia en el listado.",
+    severidad:2
+  },
+  5: {
+    heuristic:"Fricción", color:"#DC2626",
+    section:"Tarjeta sin hover state ni acción rápida",
+    problema:"Al hacer hover sobre una tarjeta no ocurre ninguna interacción: no aparece segunda imagen del producto, no hay botón de quick-add al carrito, no hay cambio de color disponible. Para cualquier acción el usuario debe entrar al PDP obligatoriamente, añadiendo pasos innecesarios para quienes ya tienen intención de compra.",
+    hipotesis:"Implementar: (1) swap de imagen en hover mostrando vista lateral o suela. (2) Botón 'Añadir' que aparece sobre la imagen al hacer hover. (3) Color swatches clicables que actualicen la imagen en tarjeta. Reducir los pasos entre intención y acción aumenta la conversión directa desde el listado.",
+    severidad:3
+  },
+  6: {
+    heuristic:"Propuesta de Valor", color:"#059669",
+    section:"Sin badges de popularidad, urgencia o novedad",
+    problema:"La grilla tiene peso visual completamente plano: todas las tarjetas son idénticas en jerarquía. No hay badges de 'Más vendido', 'Pocas unidades', 'Nuevo' o '−20%'. Sin estas señales, el usuario no tiene guías que aceleren su decisión y el listado se percibe como un catálogo genérico sin diferenciación.",
+    hipotesis:"Agregar badges estratégicos basados en datos reales: 'Más vendido' en el top 1–2 de la categoría, 'Quedan 3' cuando stock < 5, 'Nuevo' para lanzamientos de los últimos 30 días, '−X%' en productos con descuento activo. Estos elementos son los principales catalizadores de decisión en PLPs.",
+    severidad:2
+  },
+  7: {
+    heuristic:"Propuesta de Valor", color:"#059669",
+    section:"Precio en tarjeta sin ancla de valor",
+    problema:"Los precios aparecen como números aislados sin contexto: los productos en descuento no muestran precio original tachado, no hay badge de ahorro, no hay indicador de cuotas disponibles. El usuario no puede identificar visualmente cuáles son las mejores oportunidades ni evaluar si un precio es competitivo.",
+    hipotesis:"Para productos en descuento: precio original tachado + precio final + badge con porcentaje de descuento en rojo. Para precios altos: cuotas disponibles ('3x $83.000 sin interés'). La información de valor en tarjeta incrementa tanto el CTR al PDP como la tasa de conversión final.",
+    severidad:2
+  },
+  8: {
+    heuristic:"Fricción", color:"#DC2626",
+    section:"Paginación numérica que rompe el contexto de scroll",
+    problema:"La paginación numérica obliga al usuario a navegar a una nueva URL al llegar al final del listado, perdiendo completamente su posición de scroll y el contexto visual de los productos que estaba comparando. El usuario en la página 2 tiene que reorientarse desde cero.",
+    hipotesis:"Implementar botón 'Cargar más' que agrega los siguientes N productos al final de la grilla actual, manteniendo el scroll y el contexto. Mostrar progreso explícito: 'Mostrando 8 de 47 productos'. La paginación numérica puede coexistir para deep-linking y SEO, pero no debe ser el modo principal de navegación.",
+    severidad:2
+  },
+  9: {
+    heuristic:"Claridad", color:"#D97706",
+    section:"Conteo de resultados sin feedback al filtrar",
+    problema:"El '47 productos' no tiene ningún feedback visual cuando el usuario aplica filtros: no hay animación de actualización, no hay diferenciación entre estado filtrado y total, no hay texto como 'Mostrando 12 de 47'. El usuario no sabe visualmente si su filtro tuvo efecto ni cuántos productos cumplen la combinación seleccionada.",
+    hipotesis:"Actualizar el contador en tiempo real al aplicar filtros, con micro-animación de transición. Cambiar el copy a 'Mostrando 12 de 47 productos' cuando hay filtros activos. Agregar estado de loading durante la actualización para confirmar que el tap fue registrado.",
+    severidad:2
+  },
+  10: {
+    heuristic:"Fricción", color:"#DC2626",
+    section:"Sin toggle de vista grilla / lista",
+    problema:"La PLP solo ofrece vista de grilla de 4 columnas. Para zapatillas técnicas, la vista de lista con una fila por producto y espacio para specs (drop, peso, tipo de pisada, terreno) permite comparaciones mucho más eficientes. El usuario técnico que quiere comparar 3–4 modelos tiene que abrir múltiples PDPs en paralelo.",
+    hipotesis:"Agregar toggle Grilla / Lista en la barra de resultados. La vista lista muestra: imagen a la izquierda (200px), nombre + specs clave + rating + precio + CTA a la derecha. Guardar preferencia en sessionStorage. El toggle debe ser visible pero no prominente — es para usuarios power, no para el flujo principal.",
+    severidad:1
+  }
+};
+
+let annotationsActive = false;
+let currentAnnotation = 1;
+
+function toggleAnnotations() {
+  annotationsActive = !annotationsActive;
+  document.body.classList.toggle('annotations-on', annotationsActive);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', annotationsActive);
+  btn.innerHTML = `<div class="toggle-dot"></div> ${annotationsActive ? 'Ocultar anotaciones' : 'Ver anotaciones'}`;
+}
+
+function openPanel(num) {
+  currentAnnotation = num;
+  const d = annotations[num];
+  document.getElementById('panel-number').textContent = '#' + num;
+  const tag = document.getElementById('panel-heuristic-tag');
+  tag.textContent = d.heuristic; tag.style.background = d.color;
+  document.getElementById('panel-section').textContent = d.section;
+  document.getElementById('panel-problema').textContent = d.problema;
+  document.getElementById('panel-hipotesis').textContent = d.hipotesis;
+  const sevDiv = document.getElementById('panel-severity');
+  sevDiv.innerHTML = '';
+  for(let i=1;i<=3;i++){
+    const dot = document.createElement('div');
+    dot.className = 'sev-dot' + (i<=d.severidad?' filled':'');
+    if(i<=d.severidad) dot.style.background = d.color;
+    sevDiv.appendChild(dot);
+  }
+  sevDiv.insertAdjacentHTML('beforeend',
+    `<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`
+  );
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+
+function navigateAnnotation(dir) {
+  const keys = Object.keys(annotations).map(Number);
+  let idx = keys.indexOf(currentAnnotation) + dir;
+  if(idx < 0) idx = keys.length-1;
+  if(idx >= keys.length) idx = 0;
+  openPanel(keys[idx]);
+}
+
+document.querySelectorAll('.fg-trigger').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.parentElement.classList.toggle('open');
+    btn.querySelector('span:last-child').textContent = btn.parentElement.classList.contains('open') ? '−' : '＋';
+  });
+});
+document.querySelectorAll('.f-chip').forEach(c => {
+  c.addEventListener('click', () => c.classList.toggle('on'));
+});
+</script>
+</body>
+</html>
