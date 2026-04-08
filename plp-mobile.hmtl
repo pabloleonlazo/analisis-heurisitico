@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico Mobile — PLP</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #111; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px 140px; color: #1a1a1a;
+}
+
+/* ─── PAGE HEADER ───────────────────────────────────────────── */
+.lab-header { text-align: center; margin-bottom: 36px; }
+.lab-eyebrow { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #666; font-weight: 600; margin-bottom: 10px; }
+.lab-header h1 { font-size: 26px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+.lab-header p { font-size: 13px; color: #888; max-width: 420px; line-height: 1.6; }
+.legend-bar { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 36px; }
+.leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #aaa; font-weight: 500; }
+.leg-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* ─── PHONE SCENE ───────────────────────────────────────────── */
+.phone-scene { position: relative; display: flex; gap: 32px; align-items: flex-start; justify-content: center; width: 100%; max-width: 880px; }
+.phone-wrapper { position: relative; flex-shrink: 0; }
+.phone-frame {
+  width: 390px; height: 780px; background: #0a0a0a; border-radius: 52px; padding: 14px;
+  box-shadow: 0 0 0 1px #333, 0 0 0 3px #1a1a1a, 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px #2a2a2a;
+  position: relative;
+}
+.phone-frame::before { content:''; position:absolute; left:-4px; top:120px; width:4px; height:36px; background:#2a2a2a; border-radius:2px 0 0 2px; box-shadow:0 52px 0 #2a2a2a,0 96px 0 #2a2a2a; }
+.phone-frame::after { content:''; position:absolute; right:-4px; top:160px; width:4px; height:68px; background:#2a2a2a; border-radius:0 2px 2px 0; }
+.phone-inner { width:100%; height:100%; background:#fff; border-radius:40px; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+.status-bar { background:#fff; padding:14px 24px 8px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; position:relative; z-index:10; }
+.status-time { font-size:15px; font-weight:600; }
+.status-icons { display:flex; gap:5px; align-items:center; font-size:12px; }
+.dynamic-island { position:absolute; top:12px; left:50%; transform:translateX(-50%); width:120px; height:34px; background:#0a0a0a; border-radius:20px; z-index:20; }
+.phone-scroll { flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.phone-scroll::-webkit-scrollbar { display:none; }
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated { position: relative; }
+.ann-badge {
+  display: none; position: absolute; z-index: 200;
+  width: 24px; height: 24px; border-radius: 50%;
+  font-size: 11px; font-weight: 800; color: #fff;
+  align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  border: 2px solid rgba(255,255,255,0.95);
+  transition: transform 0.15s; top: -8px; right: -8px;
+}
+.ann-badge:hover { transform: scale(1.25); }
+.ann-badge.active-badge { transform: scale(1.3); box-shadow: 0 0 0 3px rgba(255,255,255,0.4); }
+.annotations-on .ann-badge { display: flex; }
+.annotations-on .annotated { outline: 2px dashed; outline-offset: 1px; border-radius: 2px; }
+
+.h-friccion    { background: #DC2626; }
+.h-distraccion { background: #7C3AED; }
+.h-claridad    { background: #D97706; }
+.h-valor       { background: #059669; }
+
+.ann-friccion    { outline-color: rgba(220,38,38,0.25) !important; }
+.ann-distraccion { outline-color: rgba(124,58,237,0.25) !important; }
+.ann-claridad    { outline-color: rgba(217,119,6,0.25) !important; }
+.ann-valor       { outline-color: rgba(5,150,105,0.25) !important; }
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel {
+  position: fixed; top: 0; right: -440px; width: 420px; height: 100vh;
+  background: #fff; border-left: 1px solid #e8e8e8;
+  z-index: 2000; transition: right 0.3s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto; display: flex; flex-direction: column;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+}
+#ann-panel.open { right: 0; }
+#panel-header { padding: 20px 20px 16px; border-bottom: 1px solid #f2f2f2; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 2; }
+#panel-header h3 { font-size: 11px; font-weight: 700; color: #bbb; letter-spacing: 0.1em; text-transform: uppercase; }
+#close-panel { cursor: pointer; width: 32px; height: 32px; border-radius: 50%; background: #f5f5f5; border: none; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #555; line-height: 1; }
+#close-panel:hover { background: #ebebeb; }
+#panel-body { padding: 24px 20px; flex: 1; }
+.panel-num { font-size: 48px; font-weight: 200; color: #e8e8e8; line-height: 1; }
+.panel-heuristic-chip { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 14px; letter-spacing: 0.03em; }
+.panel-mobile-badge { display: inline-flex; align-items: center; gap: 4px; background: #f0f9ff; color: #0369A1; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-bottom: 10px; margin-left: 6px; vertical-align: middle; }
+.panel-section-title { font-size: 19px; font-weight: 600; color: #111; margin-bottom: 18px; line-height: 1.3; }
+.panel-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #bbb; margin-bottom: 6px; margin-top: 18px; }
+.panel-text { font-size: 14px; line-height: 1.7; color: #444; }
+.panel-mobile-only { margin-top: 16px; padding: 12px 14px; background: #f0f9ff; border-radius: 8px; border-left: 3px solid #0369A1; font-size: 13px; line-height: 1.6; color: #334; }
+.panel-mobile-only strong { display: block; font-size: 11px; font-weight: 700; color: #0369A1; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.sev-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.sev-pip { width: 28px; height: 7px; border-radius: 4px; background: #eee; }
+#panel-footer { display: flex; gap: 8px; padding: 16px 20px; border-top: 1px solid #f2f2f2; position: sticky; bottom: 0; background: #fff; }
+#panel-footer button { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #e5e5e5; background: #fff; font-size: 13px; cursor: pointer; color: #555; font-family: 'DM Sans', sans-serif; }
+#panel-footer button:hover { background: #f8f8f8; }
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1900; }
+#overlay.show { display: block; }
+
+/* ─── TOOLBAR ───────────────────────────────────────────────── */
+#lab-toolbar {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: #1c1c1e; border-radius: 40px; padding: 10px 22px;
+  display: flex; align-items: center; gap: 14px; z-index: 800;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07); white-space: nowrap;
+}
+.tb-label { font-size: 11px; color: #666; font-weight: 600; letter-spacing: 0.06em; }
+.tb-sep { width: 1px; height: 18px; background: #333; }
+#toggle-btn { display: flex; align-items: center; gap: 8px; background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 24px; padding: 7px 16px; cursor: pointer; color: #fff; font-size: 13px; font-weight: 500; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+#toggle-btn:hover { background: #3a3a3c; }
+#toggle-btn.on { background: #5B21B6; border-color: #7C3AED; }
+.t-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; transition: background 0.2s; }
+#toggle-btn.on .t-dot { background: #c4b5fd; }
+
+/* ─── ISSUES SIDEBAR ─────────────────────────────────────────── */
+.issues-sidebar { width: 260px; flex-shrink: 0; display: none; }
+.issues-sidebar.visible { display: block; }
+.sidebar-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #666; margin-bottom: 14px; }
+.issue-chip { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #1c1c1e; margin-bottom: 6px; cursor: pointer; transition: background 0.15s; border: 1px solid #2a2a2a; }
+.issue-chip:hover { background: #252525; border-color: #3a3a3a; }
+.issue-chip.mobile-specific { border-left: 2px solid #0369A1; }
+.chip-num { width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.chip-heuristic { font-size: 10px; color: #888; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 2px; }
+.chip-section { font-size: 12px; font-weight: 500; color: #ddd; line-height: 1.3; }
+.chip-mobile-label { font-size: 9px; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+/* ─── MOBILE PLP CONTENT ────────────────────────────────────── */
+/* Top nav */
+.m-topnav { padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; z-index: 50; }
+.m-back { font-size: 22px; color: #1a1a1a; background: none; border: none; cursor: pointer; padding: 4px; }
+.m-logo { font-family: 'DM Serif Display', serif; font-size: 18px; }
+.m-nav-icons { display: flex; gap: 12px; }
+.m-icon-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; position: relative; }
+.m-cart-dot { position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: #DC2626; border-radius: 50%; border: 1px solid #fff; }
+
+/* ISSUE #1 + #10: Barra de filtros/ordenamiento */
+.m-filter-bar {
+  padding: 10px 16px; background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex; gap: 8px; align-items: center;
+  position: sticky; top: 49px; z-index: 40;
+}
+.m-filter-btn {
+  flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px;
+  background: #fff; font-size: 12px; font-weight: 500; color: #333;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-family: 'DM Sans', sans-serif;
+}
+.m-sort-btn {
+  flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px;
+  background: #fff; font-size: 12px; font-weight: 500; color: #888;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-family: 'DM Sans', sans-serif;
+}
+/* Sort no muestra criterio activo = issue #10 */
+
+/* ISSUE #3: Active filters — vacío */
+.m-active-filters { padding: 8px 16px 0; min-height: 32px; display: flex; align-items: center; }
+.m-active-filters-empty { font-size: 11px; color: #ccc; font-style: italic; }
+
+/* Sticky indicator: filter bar desaparece = issue #4 */
+.m-sticky-missing {
+  display: none;
+  position: absolute; bottom: 44px; left: 0; right: 0;
+  background: rgba(220,38,38,0.07); border-top: 1.5px dashed #DC2626;
+  padding: 6px 16px; font-size: 10px; color: #DC2626; font-weight: 600;
+  letter-spacing: 0.04em; text-align: center; z-index: 50;
+}
+.annotations-on .m-sticky-missing { display: block; }
+
+/* Category header */
+.m-cat-header { padding: 12px 16px 8px; }
+.m-cat-title { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+.m-cat-count { font-size: 12px; color: #aaa; }
+
+/* ISSUE #2: Product grid — 2 columns, tarjetas pequeñas */
+.m-product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 8px 12px; }
+
+.m-card { background: #fff; border-radius: 8px; border: 1px solid #f0f0f0; overflow: hidden; cursor: pointer; }
+/* No hover image, no quick-add, no badge = issues #5 #8 */
+.m-card-img {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+/* No badge on image = issue #5 */
+.m-card-img svg { width: 70px; opacity: 0.35; }
+.m-card-body { padding: 8px 10px 10px; }
+/* Name truncated = issue #6 */
+.m-card-name { font-size: 12px; font-weight: 500; color: #1a1a1a; line-height: 1.3; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-card-swatches { display: flex; gap: 4px; margin-bottom: 4px; }
+.m-card-swatch { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.08); }
+.m-card-rating { font-size: 10px; color: #F59E0B; margin-bottom: 4px; }
+.m-card-rating span { color: #bbb; }
+/* Price no anchor = issue #7 */
+.m-card-price { font-size: 13px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Price can get cut in narrow card = issue #6 */
+
+/* ISSUE #7: Load more sin feedback */
+.m-load-more-wrap { padding: 16px; }
+.m-load-more {
+  width: 100%; padding: 13px; border: 1px solid #e0e0e0; border-radius: 10px;
+  background: #fff; font-size: 14px; font-weight: 500; color: #555; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+/* No progress indicator, no count = issue #7 */
+
+/* ISSUE #9: Bottom nav — 5 tabs */
+.m-bottom-nav {
+  background: #fff; border-top: 1px solid #f0f0f0;
+  display: flex; justify-content: space-around;
+  padding: 8px 0 20px; flex-shrink: 0;
+}
+.m-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: #bbb; font-weight: 500; cursor: pointer; }
+.m-tab.active { color: #1a1a1a; }
+.m-tab-icon { font-size: 20px; line-height: 1; }
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="closePanel()"></div>
+
+<!-- PANEL -->
+<div id="ann-panel">
+  <div id="panel-header">
+    <h3>Issue heurístico</h3>
+    <button id="close-panel" onclick="closePanel()">×</button>
+  </div>
+  <div id="panel-body">
+    <div class="panel-num" id="p-num">#1</div>
+    <div id="p-chip" class="panel-heuristic-chip"></div><span id="p-mobile-badge" class="panel-mobile-badge" style="display:none">📱 Mobile específico</span>
+    <div class="panel-section-title" id="p-section"></div>
+    <div class="panel-lbl">Problema identificado</div>
+    <div class="panel-text" id="p-problema"></div>
+    <div class="panel-lbl">Hipótesis de mejora</div>
+    <div class="panel-text" id="p-hipotesis"></div>
+    <div id="p-mobile-note" class="panel-mobile-only" style="display:none">
+      <strong>Por qué es más crítico en mobile</strong>
+      <span id="p-mobile-note-text"></span>
+    </div>
+    <div class="panel-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-footer">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="lab-header">
+  <div class="lab-eyebrow">🔬 Laboratorio ResearchXL</div>
+  <h1>Análisis heurístico — PLP Mobile</h1>
+  <p>Listado de productos ficticio (STRYDE) con problemas heurísticos intencionales. Activa las anotaciones para revelarlos.</p>
+</div>
+
+<div class="legend-bar">
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#0369A1"></div><span style="display:flex;align-items:center;gap:4px;">📱 <span>Mobile específico</span></span></div>
+</div>
+
+<!-- SCENE -->
+<div class="phone-scene">
+
+  <div class="issues-sidebar" id="issues-sidebar">
+    <div class="sidebar-title">Issues detectados</div>
+  </div>
+
+  <div class="phone-wrapper">
+    <div class="phone-frame">
+      <div class="phone-inner">
+
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="dynamic-island"></div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="phone-scroll" id="phone-scroll">
+
+          <!-- Top nav -->
+          <div class="m-topnav">
+            <button class="m-back">‹</button>
+            <div class="m-logo">STRYDE</div>
+            <div class="m-nav-icons">
+              <button class="m-icon-btn">🔍</button>
+              <button class="m-icon-btn">🛒<span class="m-cart-dot"></span></button>
+            </div>
+          </div>
+
+          <!-- ISSUE #1: Filtros detrás de botones sin estado visible + ISSUE #10: Sort sin criterio activo -->
+          <div class="annotated ann-friccion" id="ann-target-1">
+            <div class="m-filter-bar">
+              <button class="m-filter-btn">⊞ Filtrar</button>
+              <!-- ISSUE #10: "Ordenar" sin mostrar criterio activo -->
+              <div class="annotated ann-claridad" id="ann-target-10" style="flex:1;">
+                <button class="m-sort-btn" style="width:100%;">↕ Ordenar</button>
+                <span class="ann-badge h-claridad" style="top:-6px;right:-6px;" onclick="openPanel(10)">10</span>
+              </div>
+            </div>
+            <span class="ann-badge h-friccion" style="top:6px;right:4px;" onclick="openPanel(1)">1</span>
+          </div>
+
+          <!-- ISSUE #3: Chips de filtros activos ausentes -->
+          <div class="annotated ann-claridad" id="ann-target-3">
+            <div class="m-active-filters">
+              <span class="m-active-filters-empty">Sin filtros activos</span>
+            </div>
+            <span class="ann-badge h-claridad" style="top:-6px;right:8px;" onclick="openPanel(3)">3</span>
+          </div>
+
+          <!-- Category header -->
+          <div class="m-cat-header">
+            <div class="m-cat-title">Zapatillas Running</div>
+            <div class="m-cat-count">47 productos</div>
+          </div>
+
+          <!-- ISSUE #2: Grid 2 columnas, imágenes pequeñas -->
+          <div class="annotated ann-claridad" id="ann-target-2">
+            <div class="m-product-grid">
+
+              <!-- Card 1: issue #5 — sin badge de urgencia/popularidad -->
+              <div class="annotated ann-valor" id="ann-target-5">
+                <div class="m-card">
+                  <div class="m-card-img" style="background:#f0efed;">
+                    <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#777"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#999"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#555"/></svg>
+                  </div>
+                  <div class="m-card-body">
+                    <div class="m-card-name">Running Pro V2</div>
+                    <div class="m-card-swatches"><div class="m-card-swatch" style="background:#1a1a1a;"></div><div class="m-card-swatch" style="background:#1E40AF;"></div></div>
+                    <div class="m-card-rating">★★★★☆ <span>(127)</span></div>
+                    <div class="m-card-price">$189.000</div>
+                  </div>
+                </div>
+                <span class="ann-badge h-valor" onclick="openPanel(5)">5</span>
+              </div>
+
+              <!-- Card 2: issue #6 — nombre y precio truncado -->
+              <div class="annotated ann-claridad" id="ann-target-6">
+                <div class="m-card">
+                  <div class="m-card-img" style="background:#eef0f4;">
+                    <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#3B5998"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#5B7DC0"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#2D4A7A"/></svg>
+                  </div>
+                  <div class="m-card-body">
+                    <div class="m-card-name">Trail Blazer X3 Edición Especial</div>
+                    <div class="m-card-swatches"><div class="m-card-swatch" style="background:#1E40AF;"></div><div class="m-card-swatch" style="background:#EA580C;"></div></div>
+                    <div class="m-card-rating">★★★★★ <span>(89)</span></div>
+                    <div class="m-card-price">$215.000 IVA incl.</div>
+                  </div>
+                </div>
+                <span class="ann-badge h-claridad" onclick="openPanel(6)">6</span>
+              </div>
+
+              <!-- Card 3: issue #7 — precio sin ancla de valor -->
+              <div class="annotated ann-valor" id="ann-target-7">
+                <div class="m-card">
+                  <div class="m-card-img" style="background:#f0f4ee;">
+                    <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#4D7C0F"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#65A30D"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#3A5C0A"/></svg>
+                  </div>
+                  <div class="m-card-body">
+                    <div class="m-card-name">Speed Lite 500</div>
+                    <div class="m-card-swatches"><div class="m-card-swatch" style="background:#4D7C0F;"></div><div class="m-card-swatch" style="background:#1a1a1a;"></div></div>
+                    <div class="m-card-rating">★★★★☆ <span>(54)</span></div>
+                    <div class="m-card-price">$159.000</div>
+                  </div>
+                </div>
+                <span class="ann-badge h-valor" onclick="openPanel(7)">7</span>
+              </div>
+
+              <!-- Card 4: issue #8 — tap sin quick add -->
+              <div class="annotated ann-friccion" id="ann-target-8">
+                <div class="m-card">
+                  <div class="m-card-img" style="background:#f5f3f0;">
+                    <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#ccc"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#ddd"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#bbb"/></svg>
+                  </div>
+                  <div class="m-card-body">
+                    <div class="m-card-name">Recover Foam</div>
+                    <div class="m-card-swatches"><div class="m-card-swatch" style="background:#e5e5e5;"></div><div class="m-card-swatch" style="background:#6B7280;"></div></div>
+                    <div class="m-card-rating">★★★★☆ <span>(203)</span></div>
+                    <div class="m-card-price">$99.000</div>
+                  </div>
+                </div>
+                <span class="ann-badge h-friccion" onclick="openPanel(8)">8</span>
+              </div>
+
+              <!-- Cards 5 & 6: sin annotation específica -->
+              <div class="m-card"><div class="m-card-img" style="background:#f2f2f0;"><svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#6B7280"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#F59E0B"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#4B5563"/></svg></div><div class="m-card-body"><div class="m-card-name">All-Road V4</div><div class="m-card-swatches"><div class="m-card-swatch" style="background:#6B7280;"></div><div class="m-card-swatch" style="background:#F59E0B;"></div></div><div class="m-card-rating">★★★★☆ <span>(76)</span></div><div class="m-card-price">$199.000</div></div></div>
+
+              <div class="m-card"><div class="m-card-img" style="background:#f4eeed;"><svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#DC2626"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#EF4444"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#B91C1C"/></svg></div><div class="m-card-body"><div class="m-card-name">Marathon Elite</div><div class="m-card-swatches"><div class="m-card-swatch" style="background:#DC2626;"></div><div class="m-card-swatch" style="background:#1a1a1a;"></div></div><div class="m-card-rating">★★★★★ <span>(41)</span></div><div class="m-card-price">$249.000</div></div></div>
+
+            </div>
+            <span class="ann-badge h-claridad" style="top:-6px;right:4px;" onclick="openPanel(2)">2</span>
+          </div>
+
+          <!-- ISSUE #4 indicator: filter bar not sticky (aparece al anotar) -->
+          <div class="m-sticky-missing" id="sticky-indicator">
+            ▲ Barra de filtros ya no es visible — no hay acceso sticky al filtrado
+          </div>
+
+          <!-- ISSUE #7 (load more): sin progreso -->
+          <div class="annotated ann-friccion" id="ann-target-4-indicator" style="display:none"></div>
+          <!-- issue #4 annotation target is on filter bar above; this is just spacing -->
+
+          <div class="annotated ann-friccion" id="ann-target-load">
+          </div>
+
+          <!-- ISSUE #7: Cargar más sin feedback ni progreso -->
+          <div class="annotated ann-friccion" id="ann-target-7-load" style="display:none;"></div>
+
+          <div class="annotated ann-friccion" id="ann-target-cargamas">
+            <div class="m-load-more-wrap">
+              <button class="m-load-more">Cargar más</button>
+            </div>
+            <span class="ann-badge h-friccion" style="top:-6px;right:16px;" onclick="openPanel(4)">4</span>
+          </div>
+
+          <div style="height:20px;"></div>
+
+        </div><!-- /phone-scroll -->
+
+        <!-- ISSUE #9: Bottom nav 5 tabs -->
+        <div class="annotated ann-distraccion" id="ann-target-9" style="position:relative;flex-shrink:0;">
+          <div class="m-bottom-nav">
+            <div class="m-tab active"><div class="m-tab-icon">🏠</div>Inicio</div>
+            <div class="m-tab"><div class="m-tab-icon">🔍</div>Buscar</div>
+            <div class="m-tab"><div class="m-tab-icon">❤️</div>Guardados</div>
+            <div class="m-tab"><div class="m-tab-icon">🛒</div>Carrito</div>
+            <div class="m-tab"><div class="m-tab-icon">👤</div>Cuenta</div>
+          </div>
+          <span class="ann-badge h-distraccion" style="top:-10px;right:4px;" onclick="openPanel(9)">9</span>
+        </div>
+
+      </div><!-- /phone-inner -->
+    </div><!-- /phone-frame -->
+  </div><!-- /phone-wrapper -->
+</div><!-- /phone-scene -->
+
+<!-- TOOLBAR -->
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO — PLP MOBILE</span>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()">
+    <div class="t-dot"></div>
+    Ver anotaciones
+  </button>
+</div>
+
+<script>
+const annotations = {
+  1: {
+    heuristic:"Fricción", color:"#DC2626", mobileSpecific:true,
+    section:"Filtros escondidos detrás de botón sin indicador de estado activo",
+    problema:"Los filtros están detrás de un botón 'Filtrar' que abre un bottom sheet. Cuando hay filtros activos, el botón no lo indica: no hay badge numérico ('Filtrar (2)'), ni cambio de color, ni texto que refleje los filtros aplicados. El usuario pierde la noción del estado de filtrado al scrollear.",
+    hipotesis:"Agregar un badge numérico al botón 'Filtrar' cuando hay filtros activos: 'Filtrar (2)'. Cambiar el color o estilo del botón para diferenciarlo del estado sin filtros. Considerar una barra horizontal de chips de filtros rápidos para los atributos de mayor uso (Talla, Color) que permita filtrar sin abrir el sheet.",
+    mobileNote:"En desktop los filtros son un sidebar siempre visible que muestra claramente el estado activo. En mobile, el acceso es indirecto — si el botón no refleja el estado, el usuario literalmente no sabe qué está viendo ni por qué.",
+    severidad:2
+  },
+  2: {
+    heuristic:"Claridad", color:"#D97706", mobileSpecific:true,
+    section:"Grid de 2 columnas con imágenes demasiado pequeñas",
+    problema:"En una pantalla de 390px, 2 columnas producen tarjetas de ~183px de ancho. Con padding, la imagen resulta en ~160px. Para zapatillas técnicas donde el diseño y los detalles visuales influyen en la decisión de compra, ese tamaño no permite evaluar el producto con suficiente claridad.",
+    hipotesis:"Ofrecer toggle entre 1 columna (imagen grande + specs) y 2 columnas. Mantener 2 columnas como default para browsing general, pero dar la opción de 1 columna para evaluación detallada. Para productos visuales como calzado, la posibilidad de ver la imagen grande sin entrar al PDP reduce el time-to-decision.",
+    mobileNote:"En desktop una tarjeta PLP tiene 220–280px de ancho y el usuario puede hacer hover para ver imagen alternativa. En mobile, 160px sin ninguna interacción posible es el único vistazo del producto antes de entrar al PDP.",
+    severidad:2
+  },
+  3: {
+    heuristic:"Claridad", color:"#D97706", mobileSpecific:false,
+    section:"Filtros activos sin chips visibles ni forma de removerlos",
+    problema:"Cuando hay filtros activos no aparecen chips sobre la grilla. El usuario no puede ver qué está filtrando ni eliminar filtros individuales sin volver a abrir el bottom sheet y deseleccionar manualmente. Esto genera confusión sobre el estado de búsqueda y fricción para modificar filtros.",
+    hipotesis:"Mostrar chips removibles en una barra horizontal scrollable encima del grid: 'Talla: 39 ×' | 'Color: Negro ×'. Cada chip debe tener mínimo 32px de altura para ser fácilmente tapeable. Agregar 'Limpiar todo' al final de la fila de chips para resetear de un tap.",
+    mobileNote:"En desktop el sidebar siempre visible muestra el estado de filtrado. En mobile, sin chips visibles, el usuario no tiene ninguna referencia de por qué está viendo esos resultados específicos — la grilla filtrada parece el catálogo completo.",
+    severidad:3
+  },
+  4: {
+    heuristic:"Fricción", color:"#DC2626", mobileSpecific:true,
+    section:"'Cargar más' sin indicador de progreso ni feedback de carga",
+    problema:"El botón 'Cargar más' no muestra cuántos productos quedan ni en qué posición del catálogo está el usuario. Al presionar el botón no hay indicador de loading — el usuario no sabe si el tap fue registrado, cuánto esperar, ni si hay más productos o si ya llegó al final del catálogo.",
+    hipotesis:"Cambiar el botón a 'Cargar más (39 restantes)'. Al presionar: spinner dentro del botón + deshabilitar el tap múltiple. Agregar texto de progreso sobre o bajo el grid: 'Mostrando 8 de 47 productos'. Esto reduce la ansiedad, el tap repetido y comunica el tamaño del catálogo.",
+    mobileNote:"En desktop la paginación numérica da contexto implícito (página 1 de 6). En mobile, el botón 'Cargar más' sin contexto es completamente opaco — el usuario no sabe si hay 5 o 100 productos más, lo que puede llevar a abandono prematuro.",
+    severidad:2
+  },
+  5: {
+    heuristic:"Propuesta de Valor", color:"#059669", mobileSpecific:false,
+    section:"Sin badges de popularidad, urgencia o novedad en tarjeta",
+    problema:"Ninguna tarjeta tiene badges de 'Más vendido', 'Pocas unidades', 'Nuevo' o '−X%'. En un grid de 2 columnas con tarjetas pequeñas, todos los productos se perciben como equivalentes y el usuario no tiene señales que guíen su atención o aceleren su decisión.",
+    hipotesis:"Agregar badges en la esquina superior de la imagen (máx. 2 por tarjeta): 'Más vendido' en negro, 'Nuevo' en verde oscuro, '−20%' en rojo si hay descuento, 'Quedan 3' cuando stock < 5. En tarjetas pequeñas, el badge sobre imagen es el único diferenciador visual de alta jerarquía.",
+    mobileNote:"En desktop hay más espacio en la tarjeta para mostrar información adicional. En mobile con tarjetas de ~160px, el badge en imagen es prácticamente el único elemento que puede comunicar urgencia o popularidad sin sacrificar espacio de precio o nombre.",
+    severidad:2
+  },
+  6: {
+    heuristic:"Claridad", color:"#D97706", mobileSpecific:true,
+    section:"Nombre y precio truncados en tarjeta angosta",
+    problema:"En el grid de 2 columnas, el nombre del producto 'Trail Blazer X3 Edición Especial' se trunca sin indicar que hay más texto. El precio con texto adicional ('$215.000 IVA incl.') tampoco cabe en la tarjeta angosta. El usuario no sabe si está viendo el nombre completo del producto.",
+    hipotesis:"Limitar el nombre del producto a máximo 2 líneas con ellipsis explícito. Para el precio, usar solo el número ('$215.000') sin texto adicional en tarjeta. El IVA y cuotas van al PDP. Establecer reglas tipográficas estrictas en tarjeta para que el truncamiento sea siempre limpio y previsible.",
+    mobileNote:"En desktop una tarjeta de 250–280px puede mostrar nombres de 2–3 líneas. En mobile con 160px, los nombres de producto compuestos se truncan inevitablemente — el diseño debe anticiparlo y gestionarlo explícitamente.",
+    severidad:2
+  },
+  7: {
+    heuristic:"Propuesta de Valor", color:"#059669", mobileSpecific:false,
+    section:"Precio en tarjeta sin ancla de valor ni indicador de descuento",
+    problema:"Los precios aparecen como números aislados. Los productos que tienen descuento (como Speed Lite 500, que bajó de $199K a $159K) no muestran precio original tachado ni porcentaje de ahorro. El usuario no puede identificar visualmente cuáles son las mejores oportunidades del listado.",
+    hipotesis:"Para productos en descuento: precio original tachado + precio actual + badge con el porcentaje ('−20%'). Para productos sin descuento: mantener el precio simple. Considerar cuotas disponibles para productos de precio alto. La información de valor en tarjeta incrementa el CTR al PDP y mejora la tasa de conversión.",
+    mobileNote:"En mobile la tarjeta es tan pequeña que cada elemento debe ganar su lugar. Un precio sin contexto de valor es un elemento que ocupa espacio sin persuadir. El badge de descuento en tarjeta tiene un ROI altísimo por su tamaño.",
+    severidad:2
+  },
+  8: {
+    heuristic:"Fricción", color:"#DC2626", mobileSpecific:true,
+    section:"Tap en tarjeta lleva al PDP sin opción de acción rápida",
+    problema:"Toda la superficie de la tarjeta es un link al PDP. No hay superficie para añadir al carrito sin entrar al detalle. Para un usuario que ya conoce el producto o tiene alta intención de compra, navegar al PDP, seleccionar talla y volver al listado añade 4–6 pasos innecesarios.",
+    hipotesis:"Agregar un botón de quick-add en la esquina inferior de la tarjeta (ícono de carrito o '+') que abra un bottom sheet con selector de talla y CTA de compra directa. El botón debe tener mínimo 36×36px y posicionarse de forma que no interfiera con el tap de navegación al PDP.",
+    mobileNote:"En desktop el hover permite mostrar un botón de quick-add sin interferir con el clic al PDP. En mobile, conviven el tap de navegación y el tap de acción en la misma superficie — la solución es una zona de acción designada y claramente diferenciada en la tarjeta.",
+    severidad:3
+  },
+  9: {
+    heuristic:"Distracción", color:"#7C3AED", mobileSpecific:true,
+    section:"Bottom navigation con 5 tabs en PLP",
+    problema:"La barra inferior permanente tiene 5 destinos con igual peso visual. En una PLP el usuario está en modo exploración/compra — la bottom nav ofrece 4 rutas de salida siempre visibles que compiten con el objetivo de seguir navegando el catálogo y encontrar un producto para comprar.",
+    hipotesis:"En PLP, enfatizar el carrito (con badge de cantidad) y reducir visualmente las otras opciones. Considerar ocultar la bottom nav al scrollear hacia abajo y mostrarla solo al scrollear hacia arriba, usando ese espacio para más contenido. Esto libera el 20% inferior de la pantalla para los productos.",
+    mobileNote:"La zona inferior de la pantalla es la de mayor accesibilidad del thumb. Poner ahí 5 rutas de fuga permanentes compite directamente con la interacción de exploración del catálogo. En PLPs de alto rendimiento, la bottom nav suele reducirse o adaptarse.",
+    severidad:2
+  },
+  10: {
+    heuristic:"Claridad", color:"#D97706", mobileSpecific:true,
+    section:"Criterio de ordenamiento activo no visible en el botón",
+    problema:"El botón de ordenamiento dice solo 'Ordenar' sin indicar cuál es el criterio activo. El usuario que quiere saber por qué está viendo esos productos en ese orden no tiene ninguna pista. Al cambiar el criterio, el botón tampoco se actualiza para reflejar la selección.",
+    hipotesis:"Actualizar el texto del botón de ordenamiento para reflejar el criterio activo: 'Ordenar: Relevancia ▼' o 'Más vendidos ▼'. Al cambiar el orden, actualizar el label en tiempo real. Esto comunica el estado actual y hace que el botón sea un control con feedback, no solo un gatillo.",
+    mobileNote:"En desktop el selector de ordenamiento muestra directamente la opción activa en el dropdown. En mobile el botón genérico 'Ordenar' oculta completamente el estado — el usuario no sabe si está viendo productos por precio, popularidad o cualquier otro criterio.",
+    severidad:2
+  }
+};
+
+let annotationsActive = false;
+let currentAnn = 1;
+
+function toggleAnnotations() {
+  annotationsActive = !annotationsActive;
+  document.body.classList.toggle('annotations-on', annotationsActive);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', annotationsActive);
+  btn.innerHTML = `<div class="t-dot"></div> ${annotationsActive ? 'Ocultar anotaciones' : 'Ver anotaciones'}`;
+  const sidebar = document.getElementById('issues-sidebar');
+  sidebar.classList.toggle('visible', annotationsActive);
+  if(annotationsActive && sidebar.children.length < 2) buildSidebar();
+}
+
+function buildSidebar() {
+  const sidebar = document.getElementById('issues-sidebar');
+  Object.entries(annotations).forEach(([num, d]) => {
+    const el = document.createElement('div');
+    el.className = 'issue-chip' + (d.mobileSpecific ? ' mobile-specific' : '');
+    el.onclick = () => openPanel(Number(num));
+    el.innerHTML = `
+      <div class="chip-num" style="background:${d.color}">${num}</div>
+      <div>
+        <div class="chip-heuristic">${d.heuristic}</div>
+        <div class="chip-section">${d.section}</div>
+        ${d.mobileSpecific ? '<div class="chip-mobile-label">📱 Mobile específico</div>' : ''}
+      </div>`;
+    sidebar.appendChild(el);
+  });
+}
+
+function openPanel(num) {
+  currentAnn = num;
+  const d = annotations[num];
+  document.getElementById('p-num').textContent = '#' + num;
+  const chip = document.getElementById('p-chip');
+  chip.textContent = d.heuristic; chip.style.background = d.color;
+  const mb = document.getElementById('p-mobile-badge');
+  mb.style.display = d.mobileSpecific ? 'inline-flex' : 'none';
+  document.getElementById('p-section').textContent = d.section;
+  document.getElementById('p-problema').textContent = d.problema;
+  document.getElementById('p-hipotesis').textContent = d.hipotesis;
+  const mn = document.getElementById('p-mobile-note');
+  if(d.mobileNote) {
+    mn.style.display = 'block';
+    document.getElementById('p-mobile-note-text').textContent = d.mobileNote;
+  } else { mn.style.display = 'none'; }
+  const sevDiv = document.getElementById('p-sev');
+  sevDiv.innerHTML = '';
+  for(let i=1;i<=3;i++){
+    const pip = document.createElement('div');
+    pip.className = 'sev-pip';
+    pip.style.background = i <= d.severidad ? d.color : '#eee';
+    sevDiv.appendChild(pip);
+  }
+  sevDiv.insertAdjacentHTML('beforeend',
+    `<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`
+  );
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  if(num === 4) document.getElementById('ann-target-cargamas')?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+
+function nav(dir) {
+  const keys = Object.keys(annotations).map(Number);
+  let idx = keys.indexOf(currentAnn) + dir;
+  if(idx < 0) idx = keys.length-1;
+  if(idx >= keys.length) idx = 0;
+  openPanel(keys[idx]);
+}
+</script>
+</body>
+</html>
