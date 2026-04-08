@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico — Página de Producto</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f8f7f5; color: #1a1a1a; }
+
+  /* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+  .annotated { position: relative; }
+  .ann-badge {
+    display: none;
+    position: absolute;
+    z-index: 500;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-size: 13px; font-weight: 700;
+    color: #fff;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+    border: 2px solid rgba(255,255,255,0.9);
+    top: -10px; right: -10px;
+  }
+  .ann-badge:hover { transform: scale(1.2); box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+  .ann-badge.active-badge { transform: scale(1.25); box-shadow: 0 0 0 4px rgba(255,255,255,0.5); }
+  .annotations-on .ann-badge { display: flex; }
+  .annotations-on .annotated { outline: 2px dashed; outline-offset: 2px; }
+
+  /* Heuristic colors */
+  .h-friccion      { background: #DC2626; }
+  .h-distraccion   { background: #7C3AED; }
+  .h-claridad      { background: #D97706; }
+  .h-valor         { background: #059669; }
+  .h-relevancia    { background: #0369A1; }
+  .ann-friccion    { outline-color: #DC262640 !important; }
+  .ann-distraccion { outline-color: #7C3AED40 !important; }
+  .ann-claridad    { outline-color: #D9770640 !important; }
+  .ann-valor       { outline-color: #05996940 !important; }
+  .ann-relevancia  { outline-color: #0369A140 !important; }
+
+  /* Panel lateral */
+  #ann-panel {
+    position: fixed; top: 0; right: -420px;
+    width: 400px; height: 100vh;
+    background: #fff;
+    border-left: 1px solid #e5e5e5;
+    z-index: 1000;
+    transition: right 0.3s ease;
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+  }
+  #ann-panel.open { right: 0; }
+  #panel-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: #fff; z-index: 2;
+  }
+  #panel-header h3 { font-size: 14px; font-weight: 600; color: #888; letter-spacing: 0.05em; text-transform: uppercase; }
+  #close-panel {
+    cursor: pointer; width: 32px; height: 32px; border-radius: 50%;
+    background: #f4f4f4; border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #555; line-height: 1;
+    transition: background 0.15s;
+  }
+  #close-panel:hover { background: #e8e8e8; }
+  #panel-body { padding: 20px; flex: 1; }
+  .panel-heuristic-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; color: #fff;
+    margin-bottom: 12px;
+  }
+  #panel-number {
+    font-size: 40px; font-weight: 300; color: #ddd;
+    line-height: 1; margin-bottom: 4px;
+  }
+  #panel-section {
+    font-size: 18px; font-weight: 600; color: #1a1a1a;
+    margin-bottom: 16px; line-height: 1.3;
+  }
+  .panel-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #aaa;
+    margin-bottom: 6px; margin-top: 16px;
+  }
+  .panel-text { font-size: 14px; line-height: 1.65; color: #444; }
+  .severity-row { display: flex; gap: 4px; margin-top: 6px; }
+  .sev-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #e5e5e5;
+  }
+  .sev-dot.filled { background: #DC2626; }
+  #panel-nav {
+    display: flex; gap: 8px; padding: 16px 20px;
+    border-top: 1px solid #f0f0f0;
+    position: sticky; bottom: 0; background: #fff;
+  }
+  #panel-nav button {
+    flex: 1; padding: 8px; border-radius: 8px;
+    border: 1px solid #e5e5e5; background: #fff;
+    font-size: 13px; cursor: pointer; color: #555;
+    transition: background 0.15s;
+  }
+  #panel-nav button:hover { background: #f5f5f5; }
+
+  /* Overlay oscuro */
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 900; }
+  #overlay.show { display: block; }
+
+  /* ─── TOOLBAR ────────────────────────────────────────────────── */
+  #lab-toolbar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; border-radius: 40px;
+    padding: 10px 20px;
+    display: flex; align-items: center; gap: 16px;
+    z-index: 800; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    white-space: nowrap;
+  }
+  #lab-toolbar span {
+    font-size: 12px; color: #aaa; font-weight: 500; letter-spacing: 0.04em;
+  }
+  #toggle-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: #2d2d2d; border: 1px solid #444;
+    border-radius: 24px; padding: 6px 16px;
+    cursor: pointer; color: #fff; font-size: 13px; font-weight: 500;
+    transition: all 0.2s;
+  }
+  #toggle-btn:hover { background: #3a3a3a; }
+  #toggle-btn.on { background: #6D28D9; border-color: #7C3AED; }
+  .toggle-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #666; transition: background 0.2s;
+  }
+  #toggle-btn.on .toggle-dot { background: #c4b5fd; }
+  .legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: #bbb;
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sep { width: 1px; height: 20px; background: #333; }
+
+  /* ─── TOP PROMO BAR (ISSUE #1) ───────────────────────────────── */
+  #promo-bar {
+    background: #111; color: #fff;
+    text-align: center; padding: 9px 20px;
+    font-size: 13px; letter-spacing: 0.02em;
+  }
+  #promo-bar a { color: #fcd34d; text-decoration: underline; margin-left: 4px; font-weight: 500; }
+
+  /* ─── NAVIGATION (ISSUE #2) ──────────────────────────────────── */
+  nav {
+    background: #fff; border-bottom: 1px solid #eee;
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px; position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: 'DM Serif Display', serif; font-size: 22px; color: #1a1a1a; }
+  .nav-links { display: flex; gap: 24px; list-style: none; }
+  .nav-links a {
+    font-size: 13px; color: #555; text-decoration: none;
+    font-weight: 500; white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: #111; }
+  .nav-icons { display: flex; gap: 16px; align-items: center; }
+  .nav-icon-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; color: #555; display: flex; align-items: center; gap: 4px;
+  }
+  .cart-badge {
+    background: #DC2626; color: #fff; border-radius: 10px;
+    font-size: 10px; padding: 1px 5px; margin-left: 2px;
+  }
+
+  /* ─── PAGE LAYOUT ────────────────────────────────────────────── */
+  .page-wrapper { max-width: 1200px; margin: 0 auto; padding: 40px 40px 120px; }
+  .breadcrumb { font-size: 12px; color: #aaa; margin-bottom: 32px; }
+  .breadcrumb span { color: #111; }
+
+  /* ─── PRODUCT SECTION ────────────────────────────────────────── */
+  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+
+  /* Images */
+  .product-images {}
+  .main-image {
+    aspect-ratio: 1;
+    background: #f0efed;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .main-image img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+  .main-image-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; color: #bbb;
+    font-size: 13px;
+  }
+  .shoe-svg { width: 200px; opacity: 0.3; }
+  .thumb-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .thumb {
+    aspect-ratio: 1; background: #e8e7e5; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #bbb; font-size: 11px; text-align: center;
+    cursor: pointer; border: 2px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .thumb:first-child { border-color: #1a1a1a; }
+  .thumb:hover { border-color: #999; }
+
+  /* Info */
+  .product-info { padding-top: 4px; }
+  .product-badge {
+    display: inline-block; background: #fef3c7;
+    color: #92400e; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px;
+    margin-bottom: 12px; letter-spacing: 0.03em;
+  }
+
+  /* Title - ISSUE #3 */
+  .product-title { font-size: 28px; font-weight: 600; line-height: 1.2; margin-bottom: 4px; }
+  .product-sku { font-size: 12px; color: #bbb; margin-bottom: 16px; }
+
+  /* Rating */
+  .rating-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+  .stars { color: #F59E0B; font-size: 14px; letter-spacing: 1px; }
+  .rating-count { font-size: 13px; color: #888; }
+
+  /* Price - ISSUE #4 */
+  .price-block { margin-bottom: 24px; }
+  .price-main { font-size: 32px; font-weight: 600; color: #1a1a1a; }
+  .price-tax { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+  /* Color */
+  .option-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
+  .color-swatch-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .color-swatch {
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; border: 3px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .color-swatch.selected { border-color: #1a1a1a; }
+  .color-swatch:hover { border-color: #999; }
+
+  /* Sizes - ISSUE #5 */
+  .size-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .size-guide-link { font-size: 12px; color: #888; text-decoration: underline; cursor: pointer; }
+  .size-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; margin-bottom: 24px; }
+  .size-btn {
+    aspect-ratio: 1; border-radius: 8px; border: 1px solid #ddd;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    background: #fff; color: #1a1a1a;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .size-btn:hover { border-color: #1a1a1a; }
+  .size-btn.selected { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .size-btn.unavailable { color: #ddd; cursor: not-allowed; border-color: #f0f0f0; }
+
+  /* CTAs - ISSUE #6 */
+  .cta-group { display: grid; gap: 10px; margin-bottom: 24px; }
+  .cta-primary {
+    width: 100%; padding: 16px;
+    background: #1a1a1a; color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .cta-primary:hover { background: #333; }
+  .cta-secondary {
+    width: 100%; padding: 14px;
+    background: #fff; color: #1a1a1a;
+    border: 1.5px solid #1a1a1a; border-radius: 10px;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .cta-secondary:hover { background: #f5f5f5; }
+  .cta-tertiary-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cta-tertiary {
+    width: 100%; padding: 11px;
+    background: #fff; color: #555;
+    border: 1px solid #ddd; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .cta-tertiary:hover { background: #f5f5f5; border-color: #bbb; }
+
+  /* Description - ISSUE #7 */
+  .desc-block { border-top: 1px solid #f0f0f0; padding-top: 20px; }
+  .desc-block p { font-size: 14px; color: #666; line-height: 1.7; }
+
+  /* Shipping - ISSUE #8 */
+  .accordion { border-top: 1px solid #f0f0f0; margin-top: 20px; }
+  .accordion-item { border-bottom: 1px solid #f0f0f0; }
+  .accordion-trigger {
+    width: 100%; padding: 14px 0;
+    background: none; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 14px; font-weight: 500; color: #333;
+    text-align: left;
+  }
+  .accordion-content {
+    font-size: 13px; color: #666; line-height: 1.7;
+    padding-bottom: 14px; display: none;
+  }
+  .accordion-item.open .accordion-content { display: block; }
+
+  /* ─── BELOW FOLD ──────────────────────────────────────────────── */
+  .section-divider { border: none; border-top: 1px solid #eee; margin: 48px 0; }
+
+  /* Reviews section */
+  .section-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+  .reviews-summary {
+    display: flex; gap: 40px; align-items: center;
+    background: #f8f7f5; border-radius: 12px; padding: 24px; margin-bottom: 24px;
+  }
+  .big-rating { text-align: center; }
+  .big-rating .num { font-size: 56px; font-weight: 300; line-height: 1; }
+  .big-rating .lbl { font-size: 12px; color: #aaa; margin-top: 4px; }
+  .rating-bars { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #888; }
+  .bar-track { flex: 1; height: 6px; background: #e5e5e5; border-radius: 3px; }
+  .bar-fill { height: 100%; background: #F59E0B; border-radius: 3px; }
+  .review-card {
+    background: #fff; border: 1px solid #f0f0f0;
+    border-radius: 10px; padding: 20px; margin-bottom: 12px;
+  }
+  .review-meta { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .reviewer { font-size: 13px; font-weight: 600; }
+  .review-date { font-size: 12px; color: #bbb; }
+  .review-text { font-size: 13px; color: #666; line-height: 1.6; }
+
+  /* Related products */
+  .related-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .related-card { cursor: pointer; }
+  .related-img {
+    aspect-ratio: 1; background: #f0efed;
+    border-radius: 10px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #ccc; font-size: 12px;
+  }
+  .related-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .related-price { font-size: 13px; color: #888; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TOOLBAR DE LABORATORIO
+══════════════════════════════════════════════════════════════ -->
+<div id="lab-toolbar">
+  <span>🔬 LAB HEURÍSTICO</span>
+  <div class="sep"></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#DC2626"></div> Fricción</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7C3AED"></div> Distracción</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#D97706"></div> Claridad</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#059669"></div> Prop. de Valor</div>
+  <div class="sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()">
+    <div class="toggle-dot"></div>
+    Ver anotaciones
+  </button>
+</div>
+
+<!-- Panel lateral -->
+<div id="overlay" onclick="closePanel()"></div>
+<div id="ann-panel">
+  <div id="panel-header">
+    <h3>Issue heurístico</h3>
+    <button id="close-panel" onclick="closePanel()">×</button>
+  </div>
+  <div id="panel-body">
+    <div id="panel-number">#1</div>
+    <div id="panel-heuristic-tag" class="panel-heuristic-tag"></div>
+    <div id="panel-section" class="panel-section"></div>
+    <div class="panel-label">Problema identificado</div>
+    <div id="panel-problema" class="panel-text"></div>
+    <div class="panel-label">Hipótesis de mejora</div>
+    <div id="panel-hipotesis" class="panel-text"></div>
+    <div class="panel-label">Severidad</div>
+    <div class="severity-row" id="panel-severity"></div>
+  </div>
+  <div id="panel-nav">
+    <button onclick="navigateAnnotation(-1)">← Anterior</button>
+    <button onclick="navigateAnnotation(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     INICIO DE LA PÁGINA DE PRODUCTO (CON PROBLEMAS INTENCIONALES)
+══════════════════════════════════════════════════════════════ -->
+
+<!-- ISSUE #1: Barra promo no contextual → Distracción -->
+<div class="annotated ann-distraccion" id="ann-target-1">
+  <div id="promo-bar">
+    20% de descuento en toda la línea de trail running este fin de semana.
+    <a href="#">Ver oferta</a>
+  </div>
+  <span class="ann-badge h-distraccion" onclick="openPanel(1)">1</span>
+</div>
+
+<!-- ISSUE #2: Navegación saturada → Distracción -->
+<div class="annotated ann-distraccion" id="ann-target-2">
+  <nav>
+    <div class="nav-logo">STRYDE</div>
+    <ul class="nav-links">
+      <li><a href="#">Hombres</a></li>
+      <li><a href="#">Mujeres</a></li>
+      <li><a href="#">Running</a></li>
+      <li><a href="#">Trail</a></li>
+      <li><a href="#">Gym</a></li>
+      <li><a href="#">Sale</a></li>
+      <li><a href="#">Blog</a></li>
+      <li><a href="#">Colecciones</a></li>
+    </ul>
+    <div class="nav-icons">
+      <button class="nav-icon-btn">🔍 Buscar</button>
+      <button class="nav-icon-btn">♡ Guardados</button>
+      <button class="nav-icon-btn">👤 Cuenta</button>
+      <button class="nav-icon-btn">🛒 Carrito <span class="cart-badge">2</span></button>
+    </div>
+  </nav>
+  <span class="ann-badge h-distraccion" style="top: 12px; right: 4px;">2</span>
+</div>
+
+<div class="page-wrapper">
+  <div class="breadcrumb">Inicio › Running › Zapatillas › <span>Running Pro V2</span></div>
+
+  <div class="product-grid">
+
+    <!-- ── IMÁGENES ───────────────────────────────────────────── -->
+    <div class="product-images">
+      <div class="main-image">
+        <div class="main-image-placeholder">
+          <svg viewBox="0 0 200 120" class="shoe-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 85 C10 85 30 40 80 35 C120 30 160 50 175 60 C185 67 188 75 185 82 L180 88 C170 90 150 92 100 92 C60 92 25 90 15 88 Z" fill="#666"/>
+            <path d="M80 35 C90 20 110 18 120 25 C130 32 125 38 115 37 C105 36 95 36 80 35 Z" fill="#888"/>
+            <path d="M10 85 L185 82 L180 92 C150 97 60 97 15 92 Z" fill="#444"/>
+          </svg>
+          <span style="font-size:12px; color:#ccc;">Vista principal</span>
+        </div>
+      </div>
+      <div class="thumb-row">
+        <div class="thumb">Vista 1</div>
+        <div class="thumb" style="background:#e0dfd8;">Vista 2</div>
+        <div class="thumb" style="background:#dde0d8;">Suela</div>
+        <div class="thumb" style="background:#d8dde0;">Detalle</div>
+      </div>
+      <p style="font-size:12px; color:#bbb; text-align:center; margin-top:8px;">Solo 4 ángulos disponibles</p>
+    </div>
+
+    <!-- ── INFO PRODUCTO ─────────────────────────────────────── -->
+    <div class="product-info">
+      <div class="product-badge">Nuevo</div>
+
+      <!-- ISSUE #3: Título genérico → Claridad -->
+      <div class="annotated ann-claridad" id="ann-target-3">
+        <h1 class="product-title">Zapatilla Running Pro V2</h1>
+        <span class="ann-badge h-claridad" style="top:-8px; right:-8px;" onclick="openPanel(3)">3</span>
+      </div>
+      <div class="product-sku">SKU: STR-RUN-PRO-V2-NGR</div>
+
+      <div class="rating-row">
+        <span class="stars">★★★★☆</span>
+        <span class="rating-count">4.1 (127 reseñas)</span>
+      </div>
+
+      <!-- ISSUE #4: Precio sin contexto → Propuesta de Valor -->
+      <div class="annotated ann-valor" id="ann-target-4">
+        <div class="price-block">
+          <div class="price-main">$189.000</div>
+          <div class="price-tax">IVA incluido</div>
+        </div>
+        <span class="ann-badge h-valor" onclick="openPanel(4)">4</span>
+      </div>
+
+      <!-- Color -->
+      <div>
+        <div class="option-label">Color: Negro / Blanco</div>
+        <div class="color-swatch-row">
+          <div class="color-swatch selected" style="background:#1a1a1a;"></div>
+          <div class="color-swatch" style="background:#4B5563;"></div>
+          <div class="color-swatch" style="background:#1E40AF;"></div>
+          <div class="color-swatch" style="background:#DC2626;"></div>
+        </div>
+      </div>
+
+      <!-- ISSUE #5: Selector de talla sin guía → Fricción -->
+      <div class="annotated ann-friccion" id="ann-target-5">
+        <div class="size-header">
+          <div class="option-label">Talla</div>
+          <span class="size-guide-link" style="color:#bbb;">(sin guía de tallas)</span>
+        </div>
+        <div class="size-grid">
+          <div class="size-btn unavailable">37</div>
+          <div class="size-btn">38</div>
+          <div class="size-btn selected">39</div>
+          <div class="size-btn">40</div>
+          <div class="size-btn">41</div>
+          <div class="size-btn unavailable">42</div>
+          <div class="size-btn">43</div>
+          <div class="size-btn">44</div>
+          <div class="size-btn unavailable">45</div>
+          <div class="size-btn">46</div>
+          <div class="size-btn unavailable">47</div>
+          <div class="size-btn unavailable">48</div>
+        </div>
+        <span class="ann-badge h-friccion" onclick="openPanel(5)">5</span>
+      </div>
+
+      <!-- ISSUE #6: 4 CTAs compitiendo → Distracción -->
+      <div class="annotated ann-distraccion" id="ann-target-6">
+        <div class="cta-group">
+          <button class="cta-primary">Añadir al carrito</button>
+          <button class="cta-secondary">Comprar ahora</button>
+          <div class="cta-tertiary-row">
+            <button class="cta-tertiary">♡ Guardar</button>
+            <button class="cta-tertiary">⇄ Comparar</button>
+          </div>
+        </div>
+        <span class="ann-badge h-distraccion" onclick="openPanel(6)">6</span>
+      </div>
+
+      <!-- ISSUE #7: Descripción vaga → Claridad -->
+      <div class="annotated ann-claridad" id="ann-target-7">
+        <div class="desc-block">
+          <p>
+            Diseño innovador que te llevará al próximo nivel. Con tecnología avanzada de
+            amortiguación y materiales de alta calidad, estas zapatillas ofrecen máximo
+            rendimiento para el corredor moderno. Su construcción ergonómica garantiza
+            una experiencia única en cada pisada.
+          </p>
+        </div>
+        <span class="ann-badge h-claridad" onclick="openPanel(7)">7</span>
+      </div>
+
+      <!-- ISSUE #8: Envío enterrado en acordeón → Fricción -->
+      <div class="annotated ann-friccion" id="ann-target-8">
+        <div class="accordion">
+          <div class="accordion-item">
+            <button class="accordion-trigger">
+              Características técnicas
+              <span>＋</span>
+            </button>
+            <div class="accordion-content">
+              Drop: 8mm · Peso: 285g · Upper: malla transpirable · Suela: goma de alta tracción
+            </div>
+          </div>
+          <div class="accordion-item">
+            <button class="accordion-trigger">
+              Envío y devoluciones
+              <span>＋</span>
+            </button>
+            <div class="accordion-content">
+              Envío estándar gratuito en pedidos sobre $80.000 (5–7 días hábiles).<br>
+              Devoluciones gratuitas dentro de los primeros 30 días.
+            </div>
+          </div>
+          <div class="accordion-item">
+            <button class="accordion-trigger">
+              Guía de tallas
+              <span>＋</span>
+            </button>
+            <div class="accordion-content">
+              Talla EU 39 = 25.0 cm · EU 40 = 25.5 cm · EU 41 = 26.0 cm · EU 42 = 26.5 cm
+            </div>
+          </div>
+        </div>
+        <span class="ann-badge h-friccion" style="top:4px; right:-10px;" onclick="openPanel(8)">8</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECCIÓN RESEÑAS ──────────────────────────────────────── -->
+  <hr class="section-divider">
+  <h2 class="section-title">Reseñas de clientes</h2>
+  <div class="reviews-summary">
+    <div class="big-rating">
+      <div class="num">4.1</div>
+      <div class="stars">★★★★☆</div>
+      <div class="lbl">127 reseñas</div>
+    </div>
+    <div class="rating-bars">
+      <div class="bar-row"><span>5★</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><span>55%</span></div>
+      <div class="bar-row"><span>4★</span><div class="bar-track"><div class="bar-fill" style="width:22%"></div></div><span>22%</span></div>
+      <div class="bar-row"><span>3★</span><div class="bar-track"><div class="bar-fill" style="width:12%"></div></div><span>12%</span></div>
+      <div class="bar-row"><span>2★</span><div class="bar-track"><div class="bar-fill" style="width:7%"></div></div><span>7%</span></div>
+      <div class="bar-row"><span>1★</span><div class="bar-track"><div class="bar-fill" style="width:4%"></div></div><span>4%</span></div>
+    </div>
+  </div>
+  <div class="review-card">
+    <div class="review-meta"><span class="reviewer">Gabriela M.</span><span class="review-date">15 Mar 2025</span></div>
+    <div class="stars" style="font-size:12px; margin-bottom:6px;">★★★★★</div>
+    <div class="review-text">Excelentes para entrenamiento diario. Me tardé un poco en encontrar la talla correcta porque no hay guía visible, pero valen la pena.</div>
+  </div>
+  <div class="review-card">
+    <div class="review-meta"><span class="reviewer">Carlos V.</span><span class="review-date">2 Feb 2025</span></div>
+    <div class="stars" style="font-size:12px; margin-bottom:6px;">★★★☆☆</div>
+    <div class="review-text">Buenas zapatillas pero la descripción del producto no me decía nada concreto. Tuve que buscar en YouTube para saber si eran para mi tipo de pisada.</div>
+  </div>
+
+  <!-- ── PRODUCTOS RELACIONADOS ─────────────────────────────── -->
+  <hr class="section-divider">
+  <h2 class="section-title">También te puede interesar</h2>
+  <div class="related-grid">
+    <div class="related-card">
+      <div class="related-img">Img</div>
+      <div class="related-name">Trail Blazer X3</div>
+      <div class="related-price">$215.000</div>
+    </div>
+    <div class="related-card">
+      <div class="related-img">Img</div>
+      <div class="related-name">Speed Lite 500</div>
+      <div class="related-price">$159.000</div>
+    </div>
+    <div class="related-card">
+      <div class="related-img">Img</div>
+      <div class="related-name">Recover Foam</div>
+      <div class="related-price">$99.000</div>
+    </div>
+    <div class="related-card">
+      <div class="related-img">Img</div>
+      <div class="related-name">All-Road V4</div>
+      <div class="related-price">$199.000</div>
+    </div>
+  </div>
+
+</div><!-- /page-wrapper -->
+
+
+<script>
+const annotations = {
+  1: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Barra promocional superior",
+    problema: "La barra ofrece '20% en zapatillas de trail' cuando el usuario está viendo zapatillas de carretera. El mensaje es irrelevante para el contexto y compite directamente con el objetivo de la página: que el usuario añada el producto al carrito.",
+    hipotesis: "Mostrar un mensaje contextual al producto que se está viendo (ej. 'Envío gratis en este producto'), o eliminar la barra promocional en páginas de producto para reducir los puntos de fuga.",
+    severidad: 3
+  },
+  2: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Navegación principal",
+    problema: "La barra de navegación tiene 8 categorías, un buscador, acceso a wishlist, cuenta y carrito — todos visibles y con peso similar. En una página de producto, el usuario ya llegó; tanta navegación expuesta invita a salir de la página sin convertir.",
+    hipotesis: "En páginas de producto, simplificar la navegación o utilizar un diseño colapsado (hamburger en desktop + logo) para reducir la carga cognitiva y las rutas de escape.",
+    severidad: 2
+  },
+  3: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "Título del producto",
+    problema: "'Zapatilla Running Pro V2' no comunica ningún diferenciador real. ¿Pro respecto a qué modelo? ¿V2 respecto a cuál mejora? ¿Es para carretera, trail, gym? El título no ayuda al usuario a confirmar que está en el producto correcto para su necesidad.",
+    hipotesis: "Incorporar el diferenciador clave en el título o en un subtítulo inmediato: ej. 'Running Pro V2 — Amortiguación máxima para asfalto · Pisada neutra · Larga distancia'.",
+    severidad: 3
+  },
+  4: {
+    heuristic: "Propuesta de Valor",
+    color: "#059669",
+    section: "Bloque de precio",
+    problema: "El precio ($189.000) aparece solo, sin ningún elemento que lo ancle ni justifique: no hay precio anterior tachado, no hay comparativa de valor, no hay garantías ni beneficios visibles cerca. El usuario no tiene contexto para evaluar si ese precio es justo.",
+    hipotesis: "Agregar elementos que anclen el valor justo antes o después del precio: precio de referencia tachado, '2 años de garantía incluidos', 'envío gratis', o una frase de valor como 'La zapatilla más vendida de la temporada'.",
+    severidad: 2
+  },
+  5: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Selector de talla",
+    problema: "El selector solo muestra números de talla EU sin ningún elemento de ayuda accesible: sin guía de tallas visible, sin equivalencias en CM ni US, sin enlace a modal de referencia. El usuario que no sabe su talla exacta tiene que abandonar la página para buscarlo externamente.",
+    hipotesis: "Agregar un enlace '¿Cuál es mi talla?' que abra un modal con tabla de equivalencias EU/US/CM sin salir de la página. También mostrar las tallas no disponibles claramente tachadas para reducir frustración.",
+    severidad: 3
+  },
+  6: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Área de CTAs (llamados a la acción)",
+    problema: "Hay 4 acciones disponibles con jerarquía visual casi equivalente: 'Añadir al carrito', 'Comprar ahora', 'Guardar' y 'Comparar'. El usuario no tiene una dirección clara. La ausencia de jerarquía genera parálisis de decisión.",
+    hipotesis: "Definir una jerarquía estricta: 1 CTA primario dominante (ej. 'Comprar ahora' en negro, full width), 1 secundario con menor peso visual (ej. 'Añadir al carrito', borde), y acciones terciarias como íconos pequeños sin texto que no compitan visualmente.",
+    severidad: 3
+  },
+  7: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "Descripción del producto",
+    problema: "La descripción usa solo adjetivos genéricos: 'diseño innovador', 'máximo rendimiento', 'tecnología avanzada', 'experiencia única'. Ninguna frase es específica ni verificable. Este es exactamente el tipo de copy que los usuarios ignoran o que genera desconfianza.",
+    hipotesis: "Reescribir la descripción con beneficios concretos y verificables: peso exacto (285g), drop (8mm), tipo de amortiguación, terreno recomendado, tipo de pisada. Los datos técnicos generan confianza; los adjetivos vacíos la destruyen.",
+    severidad: 2
+  },
+  8: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Información de envío y devoluciones",
+    problema: "El envío gratuito y la política de devoluciones de 30 días están escondidos dentro de un acordeón colapsado debajo del fold. Estos son dos de los factores que más influyen en la decisión de compra — y el usuario tiene que buscarlos activamente.",
+    hipotesis: "Mostrar los beneficios clave de forma visible ANTES del CTA principal: ej. íconos con '✓ Envío gratis sobre $80.000' y '✓ Devolución gratuita en 30 días'. Solo el detalle completo va al acordeón.",
+    severidad: 3
+  }
+};
+
+let annotationsActive = false;
+let currentAnnotation = 1;
+
+function toggleAnnotations() {
+  annotationsActive = !annotationsActive;
+  document.body.classList.toggle('annotations-on', annotationsActive);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', annotationsActive);
+  btn.innerHTML = `<div class="toggle-dot"></div> ${annotationsActive ? 'Ocultar anotaciones' : 'Ver anotaciones'}`;
+}
+
+function openPanel(num) {
+  currentAnnotation = num;
+  const d = annotations[num];
+  document.getElementById('panel-number').textContent = '#' + num;
+  const tag = document.getElementById('panel-heuristic-tag');
+  tag.textContent = d.heuristic;
+  tag.style.background = d.color;
+  document.getElementById('panel-section').textContent = d.section;
+  document.getElementById('panel-problema').textContent = d.problema;
+  document.getElementById('panel-hipotesis').textContent = d.hipotesis;
+  const sevDiv = document.getElementById('panel-severity');
+  sevDiv.innerHTML = '';
+  for(let i=1;i<=3;i++){
+    const dot = document.createElement('div');
+    dot.className = 'sev-dot' + (i<=d.severidad?' filled':'');
+    if(i<=d.severidad) dot.style.background = d.color;
+    sevDiv.appendChild(dot);
+  }
+  sevDiv.insertAdjacentHTML('beforeend',
+    `<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`
+  );
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  const target = document.getElementById('ann-target-'+num);
+  if(target) target.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+
+function navigateAnnotation(dir) {
+  const keys = Object.keys(annotations).map(Number);
+  let idx = keys.indexOf(currentAnnotation) + dir;
+  if(idx < 0) idx = keys.length-1;
+  if(idx >= keys.length) idx = 0;
+  openPanel(keys[idx]);
+}
+
+document.querySelectorAll('.accordion-trigger').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.parentElement.classList.toggle('open');
+    btn.querySelector('span').textContent = btn.parentElement.classList.contains('open') ? '−' : '＋';
+  });
+});
+
+document.querySelectorAll('.size-btn:not(.unavailable)').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+});
+</script>
+</body>
+</html>
