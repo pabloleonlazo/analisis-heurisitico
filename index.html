@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorios de Análisis Heurístico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --accent: #ff90e8; /* Rosa clásico de Gumroad */
+            --bg: #f4f4f0;
+            --border-width: 2px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 40px 20px;
+            color: var(--black);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-weight: 900;
+            font-size: 3rem;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        /* Tarjeta de Producto (Lab) */
+        .lab-card {
+            background: var(--white);
+            border: var(--border-width) solid var(--black);
+            box-shadow: 8px 8px 0px var(--black);
+            padding: 0;
+            transition: transform 0.1s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lab-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 10px 10px 0px var(--black);
+        }
+
+        .lab-image {
+            width: 100%;
+            height: 200px;
+            background: #ddd;
+            border-bottom: var(--border-width) solid var(--black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        .lab-content {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .tag-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border: 1px solid var(--black);
+            text-transform: uppercase;
+        }
+
+        .tag-mobile { background-color: #b1e5fc; }
+        .tag-desktop { background-color: #ff90e8; }
+
+        .lab-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+
+        .lab-description {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #444;
+            margin-bottom: 20px;
+        }
+
+        /* Botones Estilo Gumroad */
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+            border-top: var(--border-width) solid var(--black);
+        }
+
+        .btn {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--black);
+            border: var(--border-width) solid var(--black);
+            background: var(--white);
+            box-shadow: 4px 4px 0px var(--black);
+            transition: all 0.1s ease;
+        }
+
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--black);
+        }
+
+        .btn-primary {
+            background-color: var(--black);
+            color: var(--white);
+        }
+
+        .btn-pdf {
+            background-color: #ffd900; /* Amarillo llamativo */
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mis Laboratorios</h1>
+        <p>Análisis heurísticos avanzados para Mobile y Desktop</p>
+    </header>
+
+    <div class="container">
+        
+        <article class="lab-card">
+            <div class="lab-image">
+                [Imagen Previa Lab 1]
+            </div>
+            <div class="lab-content">
+                <div class="tag-container">
+                    <span class="tag tag-mobile">Mobile</span>
+                    <span class="tag tag-desktop">Desktop</span>
+                </div>
+                <h2 class="lab-title">E-commerce Checkout</h2>
+                <p class="lab-description">Análisis profundo del flujo de pago enfocado en fricción y carga cognitiva.</p>
+            </div>
+            <div class="button-group">
+                <a href="#" class="btn btn-primary">Ver Laboratorio</a>
+                <a href="guia-lab-1.pdf" class="btn btn-pdf" download>Descargar Guía PDF</a>
+            </div>
+        </article>
+
+        <article class="lab-card">
+            <div class="lab-image">
+                [Imagen Previa Lab 2]
+            </div>
+            <div class="lab-content">
+                <div class="tag-container">
+                    <span class="tag tag-mobile">Mobile</span>
+                </div>
+                <h2 class="lab-title">App de Finanzas</h2>
+                <p class="lab-description">Evaluación de la jerarquía visual y accesibilidad en dashboards complejos.</p>
+            </div>
+            <div class="button-group">
+                <a href="#" class="btn btn-primary">Ver Laboratorio</a>
+                <a href="guia-lab-2.pdf" class="btn btn-pdf" download>Descargar Guía PDF</a>
+            </div>
+        </article>
+
+    </div>
+
+</body>
+</html>
