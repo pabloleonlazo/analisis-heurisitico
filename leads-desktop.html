@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico — Landing de Captación de Leads</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f5f4f2; color: #1a1a1a; }
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated { position: relative; }
+.ann-badge {
+  display: none;
+  position: absolute;
+  z-index: 500;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 800;
+  color: #fff;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+  transition: transform 0.15s, box-shadow 0.15s;
+  border: 2.5px solid rgba(255,255,255,0.95);
+  top: -11px; right: -11px;
+}
+.ann-badge:hover { transform: scale(1.2); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.ann-badge.active-badge { transform: scale(1.3); box-shadow: 0 0 0 4px rgba(255,255,255,0.45); }
+.annotations-on .ann-badge { display: flex; }
+.annotations-on .annotated { outline: 2px dashed; outline-offset: 3px; border-radius: 2px; }
+
+.h-friccion    { background: #DC2626; }
+.h-distraccion { background: #7C3AED; }
+.h-claridad    { background: #D97706; }
+.h-valor       { background: #059669; }
+.ann-friccion    { outline-color: rgba(220,38,38,0.2) !important; }
+.ann-distraccion { outline-color: rgba(124,58,237,0.2) !important; }
+.ann-claridad    { outline-color: rgba(217,119,6,0.2) !important; }
+.ann-valor       { outline-color: rgba(5,150,105,0.2) !important; }
+
+/* Panel */
+#ann-panel {
+  position: fixed; top: 0; right: -430px;
+  width: 410px; height: 100vh;
+  background: #fff;
+  border-left: 1px solid #e8e8e8;
+  z-index: 1000;
+  transition: right 0.3s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  box-shadow: -6px 0 32px rgba(0,0,0,0.1);
+}
+#ann-panel.open { right: 0; }
+#panel-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #f2f2f2;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 2;
+}
+#panel-header h3 { font-size: 11px; font-weight: 700; color: #c0c0c0; letter-spacing: 0.1em; text-transform: uppercase; }
+#close-panel {
+  cursor: pointer; width: 30px; height: 30px; border-radius: 50%;
+  background: #f5f5f5; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #666; line-height: 1;
+}
+#close-panel:hover { background: #ebebeb; }
+#panel-body { padding: 22px 20px; flex: 1; }
+.p-num { font-size: 52px; font-weight: 200; color: #ebebeb; line-height: 1; }
+.p-chip {
+  display: inline-flex; align-items: center;
+  padding: 4px 13px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; color: #fff;
+  margin-bottom: 12px; letter-spacing: 0.03em;
+}
+.p-section { font-size: 20px; font-weight: 600; color: #111; margin-bottom: 18px; line-height: 1.3; }
+.p-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #c0c0c0; margin-bottom: 6px; margin-top: 18px; }
+.p-text { font-size: 14px; line-height: 1.7; color: #444; }
+.p-leadgen-note {
+  margin-top: 16px; padding: 12px 14px;
+  background: #fdf8f0; border-radius: 8px;
+  border-left: 3px solid #D97706;
+  font-size: 13px; line-height: 1.6; color: #555;
+}
+.p-leadgen-note strong { display: block; font-size: 10px; font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.sev-row { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.sev-pip { width: 32px; height: 7px; border-radius: 4px; background: #eee; }
+#panel-nav {
+  display: flex; gap: 8px; padding: 16px 20px;
+  border-top: 1px solid #f2f2f2;
+  position: sticky; bottom: 0; background: #fff;
+}
+#panel-nav button {
+  flex: 1; padding: 9px; border-radius: 8px;
+  border: 1px solid #e8e8e8; background: #fff;
+  font-size: 13px; cursor: pointer; color: #555;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+#panel-nav button:hover { background: #f8f8f8; }
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.22); z-index: 900; }
+#overlay.show { display: block; }
+
+/* ─── TOOLBAR ───────────────────────────────────────────────── */
+#lab-toolbar {
+  position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+  background: #1a1a1a; border-radius: 40px;
+  padding: 10px 22px;
+  display: flex; align-items: center; gap: 16px;
+  z-index: 800;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+  white-space: nowrap;
+}
+.tb-label { font-size: 11px; color: #777; font-weight: 600; letter-spacing: 0.06em; }
+.tb-sep { width: 1px; height: 18px; background: #333; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #999; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+#toggle-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: #2a2a2a; border: 1px solid #3a3a3a;
+  border-radius: 24px; padding: 7px 16px;
+  cursor: pointer; color: #fff; font-size: 13px; font-weight: 500;
+  transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+}
+#toggle-btn:hover { background: #333; }
+#toggle-btn.on { background: #5B21B6; border-color: #7C3AED; }
+.t-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; transition: background 0.2s; }
+#toggle-btn.on .t-dot { background: #c4b5fd; }
+
+/* ══════════════════════════════════════════════════════════════
+   LANDING PAGE CONTENT
+══════════════════════════════════════════════════════════════ */
+
+/* Brand: KOVA — B2B analytics platform */
+
+/* ISSUE #1: Navegación completa con rutas de fuga */
+nav {
+  background: #fff; border-bottom: 1px solid #eee;
+  padding: 0 48px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.nav-logo span { color: #6D28D9; }
+.nav-links { display: flex; gap: 28px; list-style: none; }
+.nav-links a { font-size: 13px; color: #666; text-decoration: none; font-weight: 500; transition: color 0.15s; }
+.nav-links a:hover { color: #111; }
+.nav-ctas { display: flex; gap: 12px; align-items: center; }
+.nav-login { font-size: 13px; color: #555; text-decoration: none; font-weight: 500; }
+.nav-demo {
+  padding: 8px 18px; background: #6D28D9; color: #fff;
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  text-decoration: none; transition: background 0.15s;
+}
+.nav-demo:hover { background: #5B21B6; }
+
+/* Hero */
+.hero {
+  background: #fff;
+  padding: 80px 48px 72px;
+  display: grid; grid-template-columns: 1fr 480px; gap: 80px;
+  align-items: center; max-width: 1200px; margin: 0 auto;
+}
+
+/* ISSUE #2: Headline vago */
+.hero-eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #6D28D9; margin-bottom: 16px;
+}
+.hero-headline {
+  font-family: 'Playfair Display', serif;
+  font-size: 48px; font-weight: 700; line-height: 1.1;
+  color: #0f0f0f; margin-bottom: 20px; letter-spacing: -1px;
+}
+.hero-sub {
+  font-size: 16px; color: #777; line-height: 1.7; margin-bottom: 32px; max-width: 460px;
+}
+
+/* ISSUE #3: Beneficios vagos */
+.benefits-list { list-style: none; margin-bottom: 32px; display: flex; flex-direction: column; gap: 10px; }
+.benefit-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #555; line-height: 1.5; }
+.benefit-check { width: 18px; height: 18px; background: #ede9fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6D28D9; flex-shrink: 0; margin-top: 1px; }
+
+.hero-logos { display: flex; flex-direction: column; gap: 10px; }
+.hero-logos-label { font-size: 11px; color: #bbb; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.logo-row { display: flex; gap: 24px; align-items: center; }
+.logo-pill { padding: 6px 16px; background: #f5f4f2; border-radius: 6px; font-size: 12px; font-weight: 700; color: #bbb; letter-spacing: 0.04em; }
+
+/* FORM CARD */
+.form-card {
+  background: #fff; border-radius: 16px; padding: 36px 32px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
+}
+.form-card-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #bbb; margin-bottom: 8px; }
+.form-card-title { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 24px; line-height: 1.3; }
+
+/* ISSUE #4: Formulario con demasiados campos */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 12px; font-weight: 600; color: #555; }
+.form-label .req { color: #DC2626; margin-left: 2px; }
+.form-input, .form-select {
+  padding: 10px 12px; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 14px; color: #1a1a1a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  outline: none; transition: border-color 0.15s;
+  background: #fff;
+}
+.form-input:focus, .form-select:focus { border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+.form-select { color: #999; }
+.form-input::placeholder { color: #ccc; }
+
+/* ISSUE #5: Sin política de privacidad / sin expectativa de lo que sigue */
+.form-privacy-missing {
+  font-size: 11px; color: #ddd; margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* ISSUE #6: CTA genérico "Enviar" */
+.form-submit {
+  width: 100%; padding: 15px; background: #6D28D9; color: #fff;
+  border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s; letter-spacing: 0.01em;
+}
+.form-submit:hover { background: #5B21B6; }
+
+/* Below hero */
+.page-body { max-width: 1200px; margin: 0 auto; padding: 0 48px 60px; }
+
+/* Social proof section - ISSUE #7: está muy abajo, no cerca del form */
+.social-proof {
+  background: #fff; border-radius: 16px; padding: 40px 48px;
+  margin-bottom: 40px;
+}
+.sp-title { font-size: 13px; font-weight: 700; color: #bbb; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; margin-bottom: 28px; }
+.testimonials { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-bottom: 32px; }
+.testi-card { padding: 20px; background: #f9f9f8; border-radius: 12px; border: 1px solid #f0f0f0; }
+.testi-text { font-size: 14px; color: #444; line-height: 1.7; margin-bottom: 14px; font-style: italic; }
+.testi-author { display: flex; align-items: center; gap: 10px; }
+.testi-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; }
+.testi-name { font-size: 13px; font-weight: 600; }
+.testi-role { font-size: 11px; color: #aaa; }
+
+/* Features section */
+.features { margin-bottom: 40px; }
+.features-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; color: #111; margin-bottom: 8px; text-align: center; }
+.features-sub { font-size: 15px; color: #888; text-align: center; margin-bottom: 32px; }
+.features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+.feat-card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #f0f0f0; }
+.feat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
+.feat-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.feat-desc { font-size: 13px; color: #888; line-height: 1.6; }
+
+/* ISSUE #8: Footer completo con mapa del sitio = rutas de fuga */
+footer {
+  background: #0f0f0f; color: #fff;
+  padding: 56px 48px 32px;
+}
+.footer-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 40px; max-width: 1200px; margin: 0 auto 48px;
+}
+.footer-brand p { font-size: 13px; color: #888; line-height: 1.7; margin-top: 12px; max-width: 220px; }
+.footer-col h4 { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #666; margin-bottom: 14px; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.footer-col a { font-size: 13px; color: #888; text-decoration: none; transition: color 0.15s; }
+.footer-col a:hover { color: #ccc; }
+.footer-bottom {
+  border-top: 1px solid #222; padding-top: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  max-width: 1200px; margin: 0 auto;
+  font-size: 12px; color: #666;
+}
+.footer-bottom-links { display: flex; gap: 20px; }
+.footer-bottom-links a { color: #666; text-decoration: none; }
+.footer-bottom-links a:hover { color: #aaa; }
+</style>
+</head>
+<body>
+
+<!-- PANEL -->
+<div id="overlay" onclick="closePanel()"></div>
+<div id="ann-panel">
+  <div id="panel-header">
+    <h3>Issue heurístico</h3>
+    <button id="close-panel" onclick="closePanel()">×</button>
+  </div>
+  <div id="panel-body">
+    <div class="p-num" id="p-num">#1</div>
+    <div class="p-chip" id="p-chip"></div>
+    <div class="p-section" id="p-section"></div>
+    <div class="p-lbl">Problema identificado</div>
+    <div class="p-text" id="p-problema"></div>
+    <div class="p-lbl">Hipótesis de mejora</div>
+    <div class="p-text" id="p-hipotesis"></div>
+    <div class="p-leadgen-note" id="p-lgn" style="display:none">
+      <strong>Específico de landing de captación</strong>
+      <span id="p-lgn-text"></span>
+    </div>
+    <div class="p-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-nav">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO — LEAD GEN</span>
+  <div class="tb-sep"></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()">
+    <div class="t-dot"></div>
+    Ver anotaciones
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     LANDING PAGE: KOVA — B2B Analytics Platform
+══════════════════════════════════════════════════════════════ -->
+
+<!-- ISSUE #1: Navegación completa en una landing → Distracción -->
+<div class="annotated ann-distraccion" id="ann-target-1">
+  <nav>
+    <div class="nav-logo">K<span>O</span>VA</div>
+    <ul class="nav-links">
+      <li><a href="#">Producto</a></li>
+      <li><a href="#">Soluciones</a></li>
+      <li><a href="#">Precios</a></li>
+      <li><a href="#">Recursos</a></li>
+      <li><a href="#">Blog</a></li>
+      <li><a href="#">Empresa</a></li>
+    </ul>
+    <div class="nav-ctas">
+      <a href="#" class="nav-login">Iniciar sesión</a>
+      <a href="#" class="nav-demo">Ver demo</a>
+    </div>
+  </nav>
+  <span class="ann-badge h-distraccion" style="top:10px; right:4px;" onclick="openPanel(1)">1</span>
+</div>
+
+<!-- HERO -->
+<div style="background:#fff; border-bottom:1px solid #f0f0f0; padding-bottom:0;">
+  <div class="hero">
+
+    <!-- Left col -->
+    <div>
+      <div class="hero-eyebrow">Analytics · Reporting · Growth</div>
+
+      <!-- ISSUE #2: Headline genérico → Claridad -->
+      <div class="annotated ann-claridad" id="ann-target-2">
+        <h1 class="hero-headline">Lleva tu equipo<br>al siguiente nivel</h1>
+        <span class="ann-badge h-claridad" onclick="openPanel(2)">2</span>
+      </div>
+
+      <p class="hero-sub">Una plataforma diseñada para que tu empresa tome mejores decisiones con datos en tiempo real. Fácil de usar, poderosa de implementar.</p>
+
+      <!-- ISSUE #3: Beneficios vagos → Propuesta de Valor -->
+      <div class="annotated ann-valor" id="ann-target-3">
+        <ul class="benefits-list">
+          <li class="benefit-item"><div class="benefit-check">✓</div>Mejora la eficiencia de tu equipo</li>
+          <li class="benefit-item"><div class="benefit-check">✓</div>Visualización de datos en tiempo real</li>
+          <li class="benefit-item"><div class="benefit-check">✓</div>Integración con tus herramientas existentes</li>
+          <li class="benefit-item"><div class="benefit-check">✓</div>Soporte dedicado 24/7</li>
+        </ul>
+        <span class="ann-badge h-valor" style="top:-8px;right:-8px;" onclick="openPanel(3)">3</span>
+      </div>
+
+      <div class="hero-logos">
+        <div class="hero-logos-label">Usado por equipos en</div>
+        <div class="logo-row">
+          <div class="logo-pill">ACME</div>
+          <div class="logo-pill">GLOBEX</div>
+          <div class="logo-pill">INITECH</div>
+          <div class="logo-pill">UMBRELLA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right col: FORM -->
+    <div>
+      <div class="form-card">
+        <div class="form-card-eyebrow">Solicita tu demo</div>
+        <div class="form-card-title">Habla con un especialista hoy</div>
+
+        <!-- ISSUE #4: 8 campos en el formulario → Fricción -->
+        <div class="annotated ann-friccion" id="ann-target-4">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nombre <span class="req">*</span></label>
+              <input class="form-input" type="text" placeholder="Juan">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Apellido <span class="req">*</span></label>
+              <input class="form-input" type="text" placeholder="García">
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Email corporativo <span class="req">*</span></label>
+              <input class="form-input" type="email" placeholder="juan@empresa.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Empresa <span class="req">*</span></label>
+              <input class="form-input" type="text" placeholder="Mi Empresa S.A.">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cargo <span class="req">*</span></label>
+              <input class="form-input" type="text" placeholder="Director de Marketing">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono <span class="req">*</span></label>
+              <input class="form-input" type="tel" placeholder="+56 9 1234 5678">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tamaño de empresa</label>
+              <select class="form-select">
+                <option value="">Seleccionar...</option>
+                <option>1–10 empleados</option>
+                <option>11–50 empleados</option>
+                <option>51–200 empleados</option>
+                <option>201–1000 empleados</option>
+                <option>1000+</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">País</label>
+              <select class="form-select">
+                <option value="">Seleccionar...</option>
+                <option>Chile</option>
+                <option>México</option>
+                <option>Colombia</option>
+                <option>Argentina</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+          <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(4)">4</span>
+        </div>
+
+        <!-- ISSUE #5: Sin privacidad ni expectativa post-envío → Fricción -->
+        <div class="annotated ann-friccion" id="ann-target-5" style="margin-bottom:14px;">
+          <p class="form-privacy-missing">Al hacer clic en enviar aceptas nuestros términos.</p>
+          <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(5)">5</span>
+        </div>
+
+        <!-- ISSUE #6: CTA genérico → Claridad -->
+        <div class="annotated ann-claridad" id="ann-target-6">
+          <button class="form-submit">Enviar</button>
+          <span class="ann-badge h-claridad" style="top:-8px;right:-8px;" onclick="openPanel(6)">6</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BODY -->
+<div style="background:#f5f4f2; padding: 48px 0 0;">
+<div class="page-body">
+
+  <!-- Features -->
+  <div class="features">
+    <h2 class="features-title">Todo lo que necesitas para crecer</h2>
+    <p class="features-sub">Una suite completa de herramientas de análisis para equipos modernos.</p>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#ede9fe;">📊</div>
+        <div class="feat-title">Dashboards en tiempo real</div>
+        <div class="feat-desc">Visualiza el rendimiento de tu negocio con actualizaciones automáticas cada 60 segundos.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#ecfdf5;">🔗</div>
+        <div class="feat-title">Integraciones nativas</div>
+        <div class="feat-desc">Conecta con más de 150 plataformas: CRM, ERP, Google Ads, Meta, y más.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#fef9ec;">🤖</div>
+        <div class="feat-title">Alertas inteligentes</div>
+        <div class="feat-desc">Recibe notificaciones cuando las métricas cruciales se desvíen de tus objetivos.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISSUE #7: Prueba social lejos del formulario → Propuesta de Valor -->
+  <div class="annotated ann-valor" id="ann-target-7">
+    <div class="social-proof">
+      <div class="sp-title">Lo que dicen nuestros clientes</div>
+      <div class="testimonials">
+        <div class="testi-card">
+          <div class="testi-text">"Desde que implementamos KOVA redujimos el tiempo de reporte semanal de 6 horas a 20 minutos. El ROI fue evidente en el primer mes."</div>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#6D28D9;">MP</div>
+            <div><div class="testi-name">María Pacheco</div><div class="testi-role">CMO · Grupo Retail Norte</div></div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-text">"Por fin un producto que conecta nuestro CRM con Google Ads sin necesidad de un equipo técnico. La implementación tomó 2 días."</div>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#059669;">RL</div>
+            <div><div class="testi-name">Rodrigo Lagos</div><div class="testi-role">Director Digital · FinTech Andina</div></div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-text">"Las alertas automáticas nos salvaron de dos campañas que iban a quemar presupuesto. Detectamos el problema antes de que escalara."</div>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#D97706;">CS</div>
+            <div><div class="testi-name">Catalina Soto</div><div class="testi-role">Growth Lead · E-commerce MX</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="ann-badge h-valor" style="top:-8px;right:-8px;" onclick="openPanel(7)">7</span>
+  </div>
+
+</div>
+</div>
+
+<!-- ISSUE #8: Footer completo con mapa del sitio → Distracción -->
+<div class="annotated ann-distraccion" id="ann-target-8">
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div style="font-family:'Playfair Display',serif; font-size:20px; font-weight:700; color:#fff;">K<span style="color:#a78bfa;">O</span>VA</div>
+        <p>La plataforma de analytics para equipos de marketing y crecimiento que quieren tomar decisiones con datos reales.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Producto</h4>
+        <ul>
+          <li><a href="#">Características</a></li>
+          <li><a href="#">Integraciones</a></li>
+          <li><a href="#">Precios</a></li>
+          <li><a href="#">Changelog</a></li>
+          <li><a href="#">Roadmap</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Soluciones</h4>
+        <ul>
+          <li><a href="#">E-commerce</a></li>
+          <li><a href="#">SaaS</a></li>
+          <li><a href="#">Agencias</a></li>
+          <li><a href="#">Enterprise</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Recursos</h4>
+        <ul>
+          <li><a href="#">Documentación</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Webinars</a></li>
+          <li><a href="#">Casos de éxito</a></li>
+          <li><a href="#">Comunidad</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Empresa</h4>
+        <ul>
+          <li><a href="#">Acerca de</a></li>
+          <li><a href="#">Empleos</a></li>
+          <li><a href="#">Prensa</a></li>
+          <li><a href="#">Contacto</a></li>
+          <li><a href="#">Partners</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 KOVA Analytics. Todos los derechos reservados.</span>
+      <div class="footer-bottom-links">
+        <a href="#">Privacidad</a>
+        <a href="#">Términos</a>
+        <a href="#">Cookies</a>
+        <a href="#">Seguridad</a>
+      </div>
+    </div>
+  </footer>
+  <span class="ann-badge h-distraccion" style="top:16px; right:4px;" onclick="openPanel(8)">8</span>
+</div>
+
+<script>
+const annotations = {
+  1: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Navegación completa con 6 categorías",
+    leadgen: true,
+    problema: "Una landing de captación tiene un único objetivo: que el usuario complete el formulario. La barra de navegación ofrece 6 categorías + login + CTA alternativo — en total 9 rutas de salida antes de que el usuario llegue al formulario. Cada link es una oportunidad de abandono sin conversión.",
+    hipotesis: "En landings de captación, eliminar la navegación completa. Sustituirla por: logo (sin link) + botón de cierre/volver si viene de campaña. Como máximo, un link a 'Iniciar sesión' para usuarios ya registrados.",
+    ldnote: "Una landing page no es una página del sitio web. Su propósito es diferente y su diseño debe serlo también. La navegación estándar baja la tasa de conversión entre un 10% y un 50% según múltiples estudios de CRO (Unbounce, WordStream).",
+    severidad: 3
+  },
+  2: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "Headline genérico sin propuesta específica",
+    leadgen: true,
+    problema: "'Lleva tu equipo al siguiente nivel' podría ser el headline de cualquier producto B2B del mundo: un CRM, una herramienta de RRHH, un software de contabilidad. En menos de 5 segundos, el usuario debe poder responder: ¿qué es esto, para quién es, qué problema resuelve? Este headline no responde ninguna de las tres preguntas.",
+    hipotesis: "Reescribir con la fórmula: [Qué hace] + [Para quién] + [Resultado medible]. Ejemplo: 'El dashboard de analytics que conecta tus campañas de marketing con resultados reales — sin necesidad de un equipo técnico.'",
+    ldnote: "El headline es el elemento más leído de una landing. Si no comunica la propuesta de valor en 5 segundos, el 80% de los visitantes van a rebotar sin leer nada más. La claridad aquí tiene impacto directo en el Quality Score de campañas de pago.",
+    severidad: 3
+  },
+  3: {
+    heuristic: "Propuesta de Valor",
+    color: "#059669",
+    section: "Bullets de beneficios vagos e inverificables",
+    leadgen: false,
+    problema: "Los cuatro bullets usan lenguaje genérico que no se puede verificar ni cuantificar: 'mejora la eficiencia', 'visualización en tiempo real', 'integración con tus herramientas', 'soporte 24/7'. Cualquier competidor puede decir exactamente lo mismo. No hay ningún elemento diferenciador.",
+    hipotesis: "Reemplazar cada bullet con un beneficio específico y medible. Ejemplo: en lugar de 'Mejora la eficiencia' → 'Reduce el tiempo de reporte semanal de horas a minutos'. En lugar de '150+ integraciones' → nombrar las 3–4 más relevantes para el ICP.",
+    ldnote: "En una landing de lead gen los bullets son frecuentemente el último argumento que lee el usuario antes de decidir si llena el formulario. Deben responder implícitamente: '¿Por qué KOVA y no la competencia?'",
+    severidad: 2
+  },
+  4: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Formulario con 8 campos obligatorios",
+    leadgen: true,
+    problema: "El formulario pide: nombre, apellido, email, empresa, cargo, teléfono, tamaño de empresa y país — 8 campos, 6 de ellos marcados como obligatorios. Cada campo adicional reduce la tasa de conversión. La correlación entre número de campos y tasa de abandono está bien documentada: pasar de 3 a 6 campos puede bajar la conversión hasta un 50%.",
+    hipotesis: "Reducir al mínimo necesario para calificar el lead. Para una demo, con 3–4 campos es suficiente: email corporativo, nombre, empresa y cargo. El teléfono, país y tamaño se pueden recoger en la llamada de calificación. Si se necesitan más datos, implementar un formulario multistep.",
+    ldnote: "Regla de oro en lead gen: pedir solo lo necesario para el siguiente paso del funnel, no para todos los pasos de golpe. El equipo de ventas puede enriquecer el lead; la landing solo necesita conseguir el pie en la puerta.",
+    severidad: 3
+  },
+  5: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Sin política de privacidad legible ni expectativa post-envío",
+    leadgen: true,
+    problema: "El único texto legal es 'Al hacer clic en enviar aceptas nuestros términos' — en color #ddd sobre blanco, contraste ~1.4:1, prácticamente invisible. No hay link a la política de privacidad (requerimiento GDPR/Ley 19.628), no se dice qué pasará después de enviar el formulario, ni en cuánto tiempo responderán.",
+    hipotesis: "Agregar: (1) link explícito a política de privacidad con texto visible. (2) Una expectativa clara post-envío: 'Un especialista te contactará en menos de 24 horas hábiles.' Estos dos elementos reducen la ansiedad de envío y mejoran la confianza en la marca.",
+    ldnote: "La ansiedad pre-conversión es un heurístico de Friction. En formularios B2B, 'qué harán con mis datos' y 'cuándo me responderán' son las dos preguntas no resueltas que más abandonos generan en el último paso.",
+    severidad: 3
+  },
+  6: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "CTA del formulario: 'Enviar'",
+    leadgen: true,
+    problema: "'Enviar' es el peor CTA posible en un formulario. No describe qué pasa después, no refuerza el valor de la acción, no crea motivación. Psicológicamente activa el modo 'estoy cediendo mis datos a alguien' en lugar de 'voy a obtener algo valioso'.",
+    hipotesis: "El texto del CTA debe describir el resultado que el usuario obtiene al hacer clic, usando la primera persona. Ejemplos: 'Quiero ver la demo', 'Agendar mi llamada gratuita', 'Solicitar acceso ahora'. El cambio de 'Enviar' a un CTA orientado al beneficio puede aumentar las conversiones entre 15–90% (Hubspot, 2024).",
+    ldnote: "El CTA es el último punto de decisión. Cada palabra importa. El botón debe responder: ¿qué voy a obtener si hago clic aquí? 'Enviar' no responde esa pregunta.",
+    severidad: 3
+  },
+  7: {
+    heuristic: "Propuesta de Valor",
+    color: "#059669",
+    section: "Prueba social ubicada lejos del formulario",
+    leadgen: true,
+    problema: "Los tres testimonios con resultados concretos y específicos están a más de un scroll completo del formulario. La prueba social es uno de los argumentos más persuasivos en una landing B2B — pero solo si el usuario la ve en el momento de tomar la decisión, no después de que ya pasó ese momento.",
+    hipotesis: "Mover al menos un testimonio con resultado cuantificado directamente dentro o adyacente a la tarjeta del formulario. Si no cabe, agregar una reseña corta tipo: '★★★★★ «Pasamos de 6 horas a 20 minutos de reporte» — María P., CMO' justo debajo del CTA.",
+    ldnote: "En landing pages de lead gen B2B, la prueba social cerca del formulario (dentro de los 200px) incrementa la conversión significativamente. El usuario necesita ver validación externa exactamente en el momento de fricción máxima: el instante antes de hacer clic.",
+    severidad: 2
+  },
+  8: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Footer completo con mapa del sitio",
+    leadgen: true,
+    problema: "El footer tiene 5 columnas con 25+ links: producto, soluciones, recursos, empresa, legales. En una landing de captación, cada uno de esos links es una ruta de salida adicional. Un usuario que llega al footer sin convertir tiene 25 opciones de irse sin completar el objetivo.",
+    hipotesis: "Reemplazar el footer completo por un footer mínimo: logo + copyright + links de privacidad/términos (obligatorios). Sin navegación, sin mapa del sitio. Si se desea reforzar la conversión, agregar un último CTA antes del footer: 'Todavía no estás seguro — habla con nosotros.'",
+    ldnote: "El footer completo tiene sentido en páginas del sitio web donde el usuario puede necesitar orientarse. En una landing dedicada, el usuario llegó con un objetivo específico. El footer le da una salida 'respetable' antes de convertir — lo que quiere decir que te estás dando un tiro en el pie.",
+    severidad: 2
+  }
+};
+
+let active = false;
+let current = 1;
+
+function toggleAnnotations() {
+  active = !active;
+  document.body.classList.toggle('annotations-on', active);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', active);
+  btn.innerHTML = `<div class="t-dot"></div> ${active ? 'Ocultar anotaciones' : 'Ver anotaciones'}`;
+}
+
+function openPanel(num) {
+  current = num;
+  const d = annotations[num];
+  document.getElementById('p-num').textContent = '#' + num;
+  const chip = document.getElementById('p-chip');
+  chip.textContent = d.heuristic;
+  chip.style.background = d.color;
+  document.getElementById('p-section').textContent = d.section;
+  document.getElementById('p-problema').textContent = d.problema;
+  document.getElementById('p-hipotesis').textContent = d.hipotesis;
+  const lgn = document.getElementById('p-lgn');
+  if(d.ldnote) {
+    lgn.style.display = 'block';
+    document.getElementById('p-lgn-text').textContent = d.ldnote;
+  } else { lgn.style.display = 'none'; }
+  const sevDiv = document.getElementById('p-sev');
+  sevDiv.innerHTML = '';
+  for(let i=1;i<=3;i++){
+    const pip = document.createElement('div');
+    pip.className = 'sev-pip';
+    if(i<=d.severidad) pip.style.background = d.color;
+    else pip.style.background = '#eee';
+    sevDiv.appendChild(pip);
+  }
+  sevDiv.insertAdjacentHTML('beforeend',
+    `<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`);
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+
+function nav(dir) {
+  const keys = Object.keys(annotations).map(Number);
+  let idx = keys.indexOf(current) + dir;
+  if(idx<0) idx=keys.length-1;
+  if(idx>=keys.length) idx=0;
+  openPanel(keys[idx]);
+}
+</script>
+</body>
+</html>
