@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico Mobile — Página de Producto</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #111;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 140px;
+  color: #1a1a1a;
+}
+
+/* ─── PAGE HEADER ───────────────────────────────────────────── */
+.lab-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.lab-header .lab-eyebrow {
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: #666; font-weight: 600; margin-bottom: 10px;
+}
+.lab-header h1 {
+  font-size: 26px; font-weight: 600; color: #fff;
+  margin-bottom: 8px;
+}
+.lab-header p {
+  font-size: 13px; color: #888; max-width: 420px; line-height: 1.6;
+}
+
+/* ─── LEGEND BAR ────────────────────────────────────────────── */
+.legend-bar {
+  display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 36px;
+}
+.leg-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: #aaa; font-weight: 500;
+}
+.leg-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* ─── PHONE FRAME ───────────────────────────────────────────── */
+.phone-scene {
+  position: relative;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  max-width: 880px;
+}
+
+.phone-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.phone-frame {
+  width: 390px;
+  height: 780px;
+  background: #0a0a0a;
+  border-radius: 52px;
+  padding: 14px;
+  box-shadow:
+    0 0 0 1px #333,
+    0 0 0 3px #1a1a1a,
+    0 40px 80px rgba(0,0,0,0.6),
+    inset 0 0 0 1px #2a2a2a;
+  position: relative;
+}
+
+/* Side buttons */
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  left: -4px; top: 120px;
+  width: 4px; height: 36px;
+  background: #2a2a2a; border-radius: 2px 0 0 2px;
+  box-shadow: 0 52px 0 #2a2a2a, 0 96px 0 #2a2a2a;
+}
+.phone-frame::after {
+  content: '';
+  position: absolute;
+  right: -4px; top: 160px;
+  width: 4px; height: 68px;
+  background: #2a2a2a; border-radius: 0 2px 2px 0;
+}
+
+.phone-inner {
+  width: 100%; height: 100%;
+  background: #fff;
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Status bar */
+.status-bar {
+  background: #fff;
+  padding: 14px 24px 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  position: relative; z-index: 10;
+}
+.status-time { font-size: 15px; font-weight: 600; }
+.status-icons { display: flex; gap: 5px; align-items: center; font-size: 12px; }
+/* Dynamic island */
+.dynamic-island {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 34px;
+  background: #0a0a0a; border-radius: 20px;
+  z-index: 20;
+}
+
+/* Scrollable content area */
+.phone-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.phone-scroll::-webkit-scrollbar { display: none; }
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated { position: relative; }
+.ann-badge {
+  display: none;
+  position: absolute;
+  z-index: 200;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  font-size: 11px; font-weight: 800;
+  color: #fff;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  border: 2px solid rgba(255,255,255,0.95);
+  transition: transform 0.15s;
+  top: -8px; right: -8px;
+}
+.ann-badge:hover { transform: scale(1.25); }
+.ann-badge.active-badge { transform: scale(1.3); box-shadow: 0 0 0 3px rgba(255,255,255,0.4); }
+.annotations-on .ann-badge { display: flex; }
+.annotations-on .annotated { outline: 2px dashed; outline-offset: 1px; border-radius: 2px; }
+
+.h-friccion    { background: #DC2626; }
+.h-distraccion { background: #7C3AED; }
+.h-claridad    { background: #D97706; }
+.h-valor       { background: #059669; }
+.h-relevancia  { background: #0369A1; }
+.ann-friccion    { outline-color: rgba(220,38,38,0.25) !important; }
+.ann-distraccion { outline-color: rgba(124,58,237,0.25) !important; }
+.ann-claridad    { outline-color: rgba(217,119,6,0.25) !important; }
+.ann-valor       { outline-color: rgba(5,150,105,0.25) !important; }
+
+/* ─── SIDE PANEL ────────────────────────────────────────────── */
+#ann-panel {
+  position: fixed; top: 0; right: -440px;
+  width: 420px; height: 100vh;
+  background: #fff;
+  border-left: 1px solid #e8e8e8;
+  z-index: 2000;
+  transition: right 0.3s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+}
+#ann-panel.open { right: 0; }
+#panel-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #f2f2f2;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 2;
+}
+#panel-header h3 {
+  font-size: 11px; font-weight: 700; color: #bbb;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+#close-panel {
+  cursor: pointer; width: 32px; height: 32px; border-radius: 50%;
+  background: #f5f5f5; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #555; line-height: 1;
+}
+#close-panel:hover { background: #ebebeb; }
+#panel-body { padding: 24px 20px; flex: 1; }
+.panel-num { font-size: 48px; font-weight: 200; color: #e8e8e8; line-height: 1; }
+.panel-heuristic-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; color: #fff;
+  margin-bottom: 14px; letter-spacing: 0.03em;
+}
+.panel-mobile-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #f0f9ff; color: #0369A1;
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; margin-bottom: 10px; margin-left: 6px;
+  vertical-align: middle;
+}
+.panel-section-title {
+  font-size: 19px; font-weight: 600; color: #111;
+  margin-bottom: 18px; line-height: 1.3;
+}
+.panel-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #bbb;
+  margin-bottom: 6px; margin-top: 18px;
+}
+.panel-text { font-size: 14px; line-height: 1.7; color: #444; }
+.sev-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.sev-pip {
+  width: 28px; height: 7px; border-radius: 4px;
+  background: #eee; transition: background 0.2s;
+}
+.sev-pip.filled { }
+.panel-mobile-only {
+  margin-top: 16px; padding: 12px 14px;
+  background: #f0f9ff; border-radius: 8px;
+  border-left: 3px solid #0369A1;
+  font-size: 13px; line-height: 1.6; color: #334;
+}
+.panel-mobile-only strong { display: block; font-size: 11px; font-weight: 700; color: #0369A1; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+#panel-footer {
+  display: flex; gap: 8px; padding: 16px 20px;
+  border-top: 1px solid #f2f2f2;
+  position: sticky; bottom: 0; background: #fff;
+}
+#panel-footer button {
+  flex: 1; padding: 9px; border-radius: 8px;
+  border: 1px solid #e5e5e5; background: #fff;
+  font-size: 13px; cursor: pointer; color: #555;
+  font-family: 'DM Sans', sans-serif;
+}
+#panel-footer button:hover { background: #f8f8f8; }
+
+/* overlay */
+#overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:1900; }
+#overlay.show { display:block; }
+
+/* ─── TOOLBAR ───────────────────────────────────────────────── */
+#lab-toolbar {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: #1c1c1e; border-radius: 40px;
+  padding: 10px 22px;
+  display: flex; align-items: center; gap: 14px;
+  z-index: 800;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07);
+  white-space: nowrap;
+}
+#lab-toolbar .tb-label { font-size: 11px; color: #666; font-weight: 600; letter-spacing: 0.06em; }
+#lab-toolbar .tb-sep { width: 1px; height: 18px; background: #333; }
+#toggle-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: #2c2c2e; border: 1px solid #3a3a3c;
+  border-radius: 24px; padding: 7px 16px;
+  cursor: pointer; color: #fff; font-size: 13px; font-weight: 500;
+  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+}
+#toggle-btn:hover { background: #3a3a3c; }
+#toggle-btn.on { background: #5B21B6; border-color: #7C3AED; }
+.t-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; transition: background 0.2s; }
+#toggle-btn.on .t-dot { background: #c4b5fd; }
+
+/* ─── MOBILE PAGE CONTENT ───────────────────────────────────── */
+
+/* Top nav mobile */
+.m-topnav {
+  padding: 8px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border-bottom: 1px solid #f0f0f0;
+  position: sticky; top: 0; z-index: 50;
+}
+.m-back { font-size: 22px; color: #1a1a1a; background: none; border: none; cursor: pointer; line-height: 1; padding: 4px; }
+.m-logo { font-family: 'DM Serif Display', serif; font-size: 18px; }
+.m-nav-icons { display: flex; gap: 12px; }
+.m-icon-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; position: relative; }
+.m-cart-dot { position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: #DC2626; border-radius: 50%; border: 1px solid #fff; }
+
+/* Gallery - ISSUE #2 */
+.m-gallery {
+  width: 100%; aspect-ratio: 1;
+  background: #f0efed;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.m-gallery-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: #bbb;
+}
+.m-gallery-swipe-hint {
+  position: absolute; bottom: 12px; right: 14px;
+  font-size: 11px; color: #bbb; background: rgba(255,255,255,0.85);
+  padding: 3px 8px; border-radius: 10px;
+}
+/* Note: no dots/indicators = the issue */
+
+/* Product info area */
+.m-product-info { padding: 16px 16px 0; }
+
+/* Issue #1: popup */
+.m-popup-overlay {
+  position: absolute; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: flex-end;
+  border-radius: 40px;
+}
+.m-popup {
+  width: 100%; background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px 32px;
+  position: relative;
+}
+.m-popup-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #e8e8e8; border: none; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  color: #888; line-height: 1;
+}
+.m-popup h4 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.m-popup p { font-size: 13px; color: #888; line-height: 1.5; margin-bottom: 16px; }
+.m-popup input {
+  width: 100%; padding: 12px 14px; border: 1px solid #ddd;
+  border-radius: 10px; font-size: 14px; margin-bottom: 10px;
+  font-family: 'DM Sans', sans-serif; outline: none;
+}
+.m-popup-cta {
+  width: 100%; padding: 14px; background: #1a1a1a; color: #fff;
+  border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+
+/* Title - Issue #3 */
+.m-title {
+  font-size: 17px; font-weight: 600; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.m-sku { font-size: 11px; color: #bbb; margin-bottom: 8px; }
+
+/* Rating */
+.m-rating { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+.m-stars { color: #F59E0B; font-size: 12px; letter-spacing: 1px; }
+.m-rating-count { font-size: 12px; color: #888; }
+
+/* Price - Issue #4 */
+.m-price { font-size: 26px; font-weight: 600; margin-bottom: 16px; }
+.m-price-sub { font-size: 11px; color: #aaa; margin-top: 1px; font-weight: 400; }
+
+/* Color */
+.m-opt-label { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 8px; }
+.m-colors { display: flex; gap: 8px; margin-bottom: 16px; }
+.m-swatch {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 3px solid transparent; cursor: pointer;
+}
+.m-swatch.sel { border-color: #1a1a1a; }
+
+/* Sizes - Issue #5 */
+.m-sizes { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin-bottom: 18px; }
+.m-size {
+  height: 34px;
+  border: 1px solid #ddd; border-radius: 6px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  background: #fff; color: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.m-size.sel { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.m-size.unavail { color: #ddd; border-color: #f0f0f0; cursor: not-allowed; }
+/* Note: 34px height < 44px Apple HIG minimum = the issue */
+.m-size-note { font-size: 10px; color: #bbb; margin-top: -12px; margin-bottom: 14px; }
+
+/* CTAs - Issue #6 */
+.m-ctas { padding: 0 16px 16px; }
+.m-cta-primary {
+  width: 100%; padding: 15px; background: #1a1a1a; color: #fff;
+  border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+  cursor: pointer; margin-bottom: 8px;
+  font-family: 'DM Sans', sans-serif;
+}
+.m-cta-secondary {
+  width: 100%; padding: 13px; background: #fff; color: #1a1a1a;
+  border: 1.5px solid #1a1a1a; border-radius: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; margin-bottom: 8px;
+  font-family: 'DM Sans', sans-serif;
+}
+.m-cta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.m-cta-ter {
+  padding: 11px; background: #fff; color: #666;
+  border: 1px solid #ddd; border-radius: 10px; font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+
+/* Description - Issue #7 */
+.m-desc { padding: 0 16px 16px; }
+.m-desc-text {
+  font-size: 13px; color: #666; line-height: 1.7;
+  max-height: 60px; overflow: hidden; position: relative;
+}
+.m-desc-text::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 32px; background: linear-gradient(transparent, #fff);
+}
+.m-see-more { font-size: 12px; color: #888; margin-top: 6px; }
+/* "Ver más" is gray and barely visible = clarity issue */
+
+/* No sticky CTA indicator - Issue #8 */
+.m-no-sticky-indicator {
+  display: none;
+  position: absolute; bottom: 60px; left: 0; right: 0;
+  background: rgba(220,38,38,0.08); border-top: 1.5px dashed #DC2626;
+  padding: 6px 16px;
+  font-size: 10px; color: #DC2626; font-weight: 600; letter-spacing: 0.05em;
+  text-align: center; z-index: 50;
+}
+.annotations-on .m-no-sticky-indicator { display: block; }
+
+/* Bottom nav - Issue #9 */
+.m-bottom-nav {
+  position: sticky; bottom: 0;
+  background: #fff; border-top: 1px solid #f0f0f0;
+  display: flex; justify-content: space-around;
+  padding: 8px 0 20px;
+  flex-shrink: 0;
+}
+.m-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 9px; color: #bbb; font-weight: 500; cursor: pointer;
+}
+.m-tab.active { color: #1a1a1a; }
+.m-tab-icon { font-size: 20px; line-height: 1; }
+
+/* Accordion section */
+.m-accordion { border-top: 1px solid #f0f0f0; margin: 0 16px; }
+.m-acc-item { border-bottom: 1px solid #f0f0f0; }
+.m-acc-trigger {
+  width: 100%; padding: 14px 0;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 500; color: #333; text-align: left;
+  font-family: 'DM Sans', sans-serif;
+}
+.m-acc-content { font-size: 12px; color: #666; line-height: 1.7; padding-bottom: 12px; display: none; }
+.m-acc-item.open .m-acc-content { display: block; }
+
+/* Review stub */
+.m-reviews { padding: 16px; }
+.m-reviews h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.m-review { background: #f8f8f8; border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+.m-review-meta { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.m-review-name { font-size: 12px; font-weight: 600; }
+.m-review-date { font-size: 11px; color: #bbb; }
+.m-review-text { font-size: 12px; color: #666; line-height: 1.6; }
+
+/* ─── ISSUES OVERVIEW SIDEBAR ───────────────────────────────── */
+.issues-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  display: none;
+}
+.issues-sidebar.visible { display: block; }
+.sidebar-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #666; margin-bottom: 14px;
+}
+.issue-chip {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  background: #1c1c1e; margin-bottom: 6px;
+  cursor: pointer; transition: background 0.15s;
+  border: 1px solid #2a2a2a;
+}
+.issue-chip:hover { background: #252525; border-color: #3a3a3a; }
+.issue-chip.mobile-specific { border-left: 2px solid #0369A1; }
+.chip-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 10px; font-weight: 800; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.chip-info {}
+.chip-heuristic { font-size: 10px; color: #888; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 2px; }
+.chip-section { font-size: 12px; font-weight: 500; color: #ddd; line-height: 1.3; }
+.chip-mobile-label {
+  font-size: 9px; font-weight: 700; color: #60a5fa;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════ TOOLBAR -->
+<div id="overlay" onclick="closePanel()"></div>
+
+<!-- Panel lateral -->
+<div id="ann-panel">
+  <div id="panel-header">
+    <h3>Issue heurístico</h3>
+    <button id="close-panel" onclick="closePanel()">×</button>
+  </div>
+  <div id="panel-body">
+    <div class="panel-num" id="p-num">#1</div>
+    <div id="p-chip" class="panel-heuristic-chip"></div><span id="p-mobile-badge" class="panel-mobile-badge" style="display:none">📱 Mobile específico</span>
+    <div class="panel-section-title" id="p-section"></div>
+    <div class="panel-lbl">Problema identificado</div>
+    <div class="panel-text" id="p-problema"></div>
+    <div class="panel-lbl">Hipótesis de mejora</div>
+    <div class="panel-text" id="p-hipotesis"></div>
+    <div id="p-mobile-note" class="panel-mobile-only" style="display:none">
+      <strong>Por qué es más crítico en mobile</strong>
+      <span id="p-mobile-note-text"></span>
+    </div>
+    <div class="panel-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-footer">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ HEADER -->
+<div class="lab-header">
+  <div class="lab-eyebrow">🔬 Laboratorio ResearchXL</div>
+  <h1>Análisis heurístico — versión mobile</h1>
+  <p>Página de producto ficticia (STRYDE) con problemas heurísticos intencionales. Activa las anotaciones para revelarlos.</p>
+</div>
+
+<div class="legend-bar">
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div><span>Fricción</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div><span>Distracción</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div><span>Claridad</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div><span>Prop. de Valor</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#0369A1"></div><span style="display:flex;align-items:center;gap:4px;">📱 <span>Mobile específico</span></span></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ SCENE -->
+<div class="phone-scene">
+
+  <!-- ISSUES SIDEBAR (visible when annotations on) -->
+  <div class="issues-sidebar" id="issues-sidebar">
+    <div class="sidebar-title">Issues detectados</div>
+    <!-- filled by JS -->
+  </div>
+
+  <!-- PHONE -->
+  <div class="phone-wrapper">
+    <div class="phone-frame">
+      <div class="phone-inner">
+
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="dynamic-island"></div>
+          <div class="status-icons">
+            <span>●●●</span>
+            <span>WiFi</span>
+            <span>🔋</span>
+          </div>
+        </div>
+
+        <!-- ISSUE #1: Pop-up invasivo al cargar — Fricción / Mobile específico -->
+        <div class="annotated ann-friccion" id="ann-target-1" style="position:absolute;inset:0;z-index:90;pointer-events:none;">
+          <div class="m-popup-overlay" id="popup-overlay" style="pointer-events:all; border-radius:40px;">
+            <div class="m-popup">
+              <button class="m-popup-close" onclick="closePopup()" style="pointer-events:all;">×</button>
+              <h4>¡Bienvenido a STRYDE!</h4>
+              <p>Suscríbete y obtén 10% de descuento en tu primera compra.</p>
+              <input type="email" placeholder="tu@email.com">
+              <button class="m-popup-cta">Quiero mi descuento</button>
+              <p style="font-size:10px;color:#ccc;text-align:center;margin-top:8px;">No gracias, pagar precio completo.</p>
+            </div>
+          </div>
+          <span class="ann-badge h-friccion" style="top:auto;bottom:50%;right:8px;" onclick="openPanel(1)">1</span>
+        </div>
+
+        <div class="phone-scroll" id="phone-scroll">
+
+          <!-- Top nav -->
+          <div class="m-topnav">
+            <button class="m-back">‹</button>
+            <div class="m-logo">STRYDE</div>
+            <div class="m-nav-icons">
+              <button class="m-icon-btn">🔍</button>
+              <button class="m-icon-btn">🛒<span class="m-cart-dot"></span></button>
+            </div>
+          </div>
+
+          <!-- ISSUE #2: Galería sin swipe indicators — Fricción / Mobile específico -->
+          <div class="annotated ann-friccion" id="ann-target-2">
+            <div class="m-gallery">
+              <div class="m-gallery-placeholder">
+                <svg viewBox="0 0 160 100" width="160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 72 C8 72 25 32 65 28 C97 24 130 42 142 52 C150 58 152 65 150 70 L146 75 C137 77 120 79 80 79 C50 79 20 76 12 74 Z" fill="#bbb"/>
+                  <path d="M65 28 C73 15 88 13 97 20 C106 27 100 33 92 32 C84 31 76 30 65 28 Z" fill="#ccc"/>
+                  <path d="M8 72 L150 70 L146 79 C120 84 48 84 12 79 Z" fill="#aaa"/>
+                </svg>
+                <span style="font-size:11px;color:#ccc;">Vista principal</span>
+              </div>
+              <!-- No dots, no swipe arrows = the issue -->
+              <div class="m-gallery-swipe-hint">1 / 4</div>
+            </div>
+            <span class="ann-badge h-friccion" style="top:8px;right:8px;" onclick="openPanel(2)">2</span>
+          </div>
+
+          <div class="m-product-info">
+
+            <!-- ISSUE #3: Título truncado — Claridad -->
+            <div class="annotated ann-claridad" id="ann-target-3">
+              <div class="m-title">Zapatilla Running Pro V2 – Tecnología de amortiguación reactiva</div>
+              <div class="m-sku">SKU: STR-RUN-PRO-V2-NGR</div>
+              <span class="ann-badge h-claridad" style="top:-6px;right:-6px;" onclick="openPanel(3)">3</span>
+            </div>
+
+            <div class="m-rating">
+              <span class="m-stars">★★★★☆</span>
+              <span class="m-rating-count">4.1 (127)</span>
+            </div>
+
+            <!-- ISSUE #4: Precio sin anclaje — Propuesta de Valor -->
+            <div class="annotated ann-valor" id="ann-target-4">
+              <div class="m-price">
+                $189.000
+                <div class="m-price-sub">IVA incluido</div>
+              </div>
+              <span class="ann-badge h-valor" style="top:-6px;right:-6px;" onclick="openPanel(4)">4</span>
+            </div>
+
+            <div class="m-opt-label">Color: Negro / Blanco</div>
+            <div class="m-colors">
+              <div class="m-swatch sel" style="background:#1a1a1a;"></div>
+              <div class="m-swatch" style="background:#4B5563;"></div>
+              <div class="m-swatch" style="background:#1E40AF;"></div>
+              <div class="m-swatch" style="background:#DC2626;"></div>
+            </div>
+
+            <!-- ISSUE #5: Tap targets pequeños — Fricción / Mobile específico -->
+            <div class="annotated ann-friccion" id="ann-target-5">
+              <div class="m-opt-label">Talla <span style="color:#ccc;font-weight:400">(sin guía visible)</span></div>
+              <div class="m-sizes">
+                <div class="m-size unavail">37</div>
+                <div class="m-size">38</div>
+                <div class="m-size sel">39</div>
+                <div class="m-size">40</div>
+                <div class="m-size">41</div>
+                <div class="m-size unavail">42</div>
+                <div class="m-size">43</div>
+                <div class="m-size">44</div>
+                <div class="m-size unavail">45</div>
+                <div class="m-size unavail">46</div>
+              </div>
+              <div class="m-size-note">⚠ Altura de botón: 34px · Mínimo recomendado: 44px (Apple HIG)</div>
+              <span class="ann-badge h-friccion" style="top:-6px;right:-6px;" onclick="openPanel(5)">5</span>
+            </div>
+
+          </div>
+
+          <!-- ISSUE #6: 4 CTAs compitiendo — Distracción -->
+          <div class="annotated ann-distraccion m-ctas" id="ann-target-6">
+            <button class="m-cta-primary">Añadir al carrito</button>
+            <button class="m-cta-secondary">Comprar ahora</button>
+            <div class="m-cta-row">
+              <button class="m-cta-ter">♡ Guardar</button>
+              <button class="m-cta-ter">⇄ Comparar</button>
+            </div>
+            <span class="ann-badge h-distraccion" style="top:-6px;right:-6px;" onclick="openPanel(6)">6</span>
+          </div>
+
+          <!-- ISSUE #7: Descripción colapsada sin CTA visible — Claridad -->
+          <div class="annotated ann-claridad m-desc" id="ann-target-7">
+            <div class="m-opt-label" style="margin-bottom:6px;">Descripción</div>
+            <div class="m-desc-text">
+              Diseño innovador que te llevará al próximo nivel. Con tecnología avanzada de amortiguación y materiales de alta calidad, estas zapatillas ofrecen máximo rendimiento para el corredor moderno. Su construcción ergonómica garantiza una experiencia única en cada pisada.
+            </div>
+            <div class="m-see-more">Ver más...</div>
+            <span class="ann-badge h-claridad" style="top:-6px;right:-6px;" onclick="openPanel(7)">7</span>
+          </div>
+
+          <!-- Acordeón -->
+          <div class="m-accordion">
+            <div class="m-acc-item">
+              <button class="m-acc-trigger">Características técnicas <span>＋</span></button>
+              <div class="m-acc-content">Drop: 8mm · Peso: 285g · Upper: malla transpirable</div>
+            </div>
+            <div class="m-acc-item">
+              <button class="m-acc-trigger">Envío y devoluciones <span>＋</span></button>
+              <div class="m-acc-content">Envío gratis sobre $80.000. Devolución gratuita en 30 días.</div>
+            </div>
+          </div>
+
+          <!-- ISSUE #8: Sin sticky CTA al scrollear — Fricción / Mobile específico -->
+          <div class="m-no-sticky-indicator" id="sticky-indicator">
+            ▲ El botón "Añadir al carrito" ya no es visible — no hay CTA sticky
+          </div>
+
+          <!-- Reviews -->
+          <div class="m-reviews">
+            <h3>Reseñas (127)</h3>
+            <div class="m-review">
+              <div class="m-review-meta"><span class="m-review-name">Gabriela M.</span><span class="m-review-date">15 Mar</span></div>
+              <div class="m-stars" style="font-size:11px;margin-bottom:4px;">★★★★★</div>
+              <div class="m-review-text">Excelentes para entrenamiento. Me costó encontrar la talla desde el celular, los botones son muy chicos.</div>
+            </div>
+            <div class="m-review">
+              <div class="m-review-meta"><span class="m-review-name">Carlos V.</span><span class="m-review-date">2 Feb</span></div>
+              <div class="m-stars" style="font-size:11px;margin-bottom:4px;">★★★☆☆</div>
+              <div class="m-review-text">Buenas zapatillas pero tuve que cerrar el popup 3 veces para ver bien la página.</div>
+            </div>
+          </div>
+
+          <div style="height:40px;"></div>
+
+        </div><!-- /phone-scroll -->
+
+        <!-- ISSUE #9: Bottom nav saturada — Distracción -->
+        <div class="annotated ann-distraccion" id="ann-target-9" style="position:relative;">
+          <div class="m-bottom-nav">
+            <div class="m-tab active"><div class="m-tab-icon">🏠</div>Inicio</div>
+            <div class="m-tab"><div class="m-tab-icon">🔍</div>Buscar</div>
+            <div class="m-tab"><div class="m-tab-icon">❤️</div>Guardados</div>
+            <div class="m-tab"><div class="m-tab-icon">🛒</div>Carrito</div>
+            <div class="m-tab"><div class="m-tab-icon">👤</div>Cuenta</div>
+          </div>
+          <span class="ann-badge h-distraccion" style="top:-10px;right:4px;" onclick="openPanel(9)">9</span>
+        </div>
+
+      </div><!-- /phone-inner -->
+    </div><!-- /phone-frame -->
+  </div><!-- /phone-wrapper -->
+
+</div><!-- /phone-scene -->
+
+<!-- TOOLBAR -->
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO MOBILE</span>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()">
+    <div class="t-dot"></div>
+    Ver anotaciones
+  </button>
+</div>
+
+<script>
+const annotations = {
+  1: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Pop-up de suscripción al cargar",
+    mobileSpecific: true,
+    problema: "Un pop-up ocupa casi toda la pantalla en el momento en que el usuario llega a la página de producto, interrumpiendo su intención de ver y comprar el producto. El botón de cierre es de 22px — muy difícil de tocar con precisión.",
+    hipotesis: "Eliminar el pop-up en páginas de producto. Si debe existir, activarlo solo después de 30 segundos o al scroll del 60%, con un botón de cierre de mínimo 44×44px. En mobile el costo de fricción de un pop-up es 3× mayor que en desktop.",
+    mobileNote: "En desktop el pop-up es molesto; en mobile bloquea completamente el acceso al contenido porque no hay espacio lateral. La 'X' de cierre de 22px tiene una tasa de error de toque del 40–60% en thumbs promedio.",
+    severidad: 3
+  },
+  2: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Galería de producto sin indicadores de swipe",
+    mobileSpecific: true,
+    problema: "La galería muestra solo una foto sin ningún indicador visual de que hay más imágenes deslizando (sin dots, sin flechas, sin animación de entrada). El único indicio es '1/4' en texto muy pequeño en la esquina inferior derecha.",
+    hipotesis: "Agregar dots de paginación debajo de la imagen. Implementar swipe gestural nativo. Considerar un pequeño peek del segundo slide (edge visible) para insinuar que hay más contenido deslizable.",
+    mobileNote: "En desktop el usuario ve las miniaturas al costado y sabe que hay más vistas. En mobile esa convención no existe — si no hay indicador explícito, la mayoría de usuarios asume que solo hay una foto.",
+    severidad: 3
+  },
+  3: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "Título del producto truncado",
+    mobileSpecific: true,
+    problema: "El título completo es 'Zapatilla Running Pro V2 – Tecnología de amortiguación reactiva', pero con overflow: hidden y white-space: nowrap, el usuario solo ve 'Zapatilla Running Pro V2 –…'. La parte informativa del título — el único diferenciador real — queda cortada.",
+    hipotesis: "Permitir que el título ocupe 2 líneas en mobile (eliminar white-space: nowrap). Priorizar el diferenciador al inicio del nombre, no al final. Alternativamente, usar un subtítulo en segunda línea con el beneficio clave.",
+    mobileNote: "En desktop el título generalmente cabe. En mobile el espacio horizontal es ~360px — truncar es casi inevitable con nombres compuestos. El diseño debe anticiparlo, no ignorarlo.",
+    severidad: 2
+  },
+  4: {
+    heuristic: "Propuesta de Valor",
+    color: "#059669",
+    section: "Precio sin contexto de valor",
+    mobileSpecific: false,
+    problema: "$189.000 aparece solo, sin precio anterior tachado, sin elementos de confianza cerca (garantía, envío), sin ningún ancla de valor. El usuario no tiene referencia para evaluar si es un precio justo.",
+    hipotesis: "Añadir al menos dos elementos junto al precio: precio de referencia tachado y un indicador de beneficio tangible como '✓ Envío gratis' o '✓ 30 días para devolver', que justifiquen el valor.",
+    mobileNote: "En mobile el espacio para justificar el precio antes del CTA es mínimo. Cada elemento debe contar — y el precio sin contexto en una pantalla pequeña genera más dudas que en desktop donde hay más contenido visible simultáneamente.",
+    severidad: 2
+  },
+  5: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Tap targets de talla por debajo del mínimo",
+    mobileSpecific: true,
+    problema: "Los botones de talla tienen 34px de altura. Apple Human Interface Guidelines y Material Design establecen 44px × 44px como mínimo para touch targets. Con 34px, los errores de toque en manos promedio aumentan significativamente, especialmente en los extremos de la grilla.",
+    hipotesis: "Aumentar la altura mínima de los botones a 44px. Reducir el número de columnas de 5 a 4 si es necesario para mantener ese tamaño. Agregar enlace '¿Cuál es mi talla?' con modal en lugar de abrir página nueva.",
+    mobileNote: "Este problema no existe en desktop donde el cursor tiene precisión de 1px. En mobile, un tap target de 34px tiene entre 3× y 5× más errores de toque que uno de 44px, según estudios de usabilidad de MIT Touch Lab.",
+    severidad: 3
+  },
+  6: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "4 CTAs apilados con igual jerarquía",
+    mobileSpecific: false,
+    problema: "Hay 4 calls-to-action visible simultáneamente: 'Añadir al carrito', 'Comprar ahora', 'Guardar' y 'Comparar'. Todos tienen peso visual similar. El usuario no tiene una dirección clara y la pantalla entera queda dominada por botones.",
+    hipotesis: "1 CTA primario dominante (Comprar ahora, fondo negro, ancho completo). 1 CTA secundario (Añadir al carrito, solo borde). Guardar y Comparar como íconos pequeños sin texto junto al título del producto.",
+    mobileNote: "En mobile los 4 botones apilados consumen el 30–40% del viewport. El usuario tiene que hacer scroll para ver la descripción del producto, lo que invierte el orden lógico de evaluación → decisión.",
+    severidad: 3
+  },
+  7: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "Descripción colapsada con 'Ver más' invisible",
+    mobileSpecific: true,
+    problema: "La descripción está recortada con un fade-out, y el enlace 'Ver más...' usa color #888 sobre blanco — contraste de 2.5:1, por debajo del mínimo WCAG AA de 4.5:1. El usuario puede no percibir que hay más contenido disponible.",
+    hipotesis: "Usar color más oscuro para el enlace 'Ver más' (#555 mínimo) o un botón con borde explícito. Alternativamente, mostrar la descripción completa en mobile y colapsar solo las secciones técnicas.",
+    mobileNote: "En desktop la descripción generalmente es visible sin colapso. En mobile el colapso es necesario por espacio, pero el indicador de expansión debe ser inequívocamente visible e interactivo.",
+    severidad: 2
+  },
+  8: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Sin CTA sticky al hacer scroll",
+    mobileSpecific: true,
+    problema: "No hay botón de 'Añadir al carrito' fijo en la parte inferior de la pantalla. Al hacer scroll para leer la descripción, reseñas o specs, el CTA principal desaparece del viewport. El usuario tiene que volver a subir manualmente para comprar.",
+    hipotesis: "Implementar una barra sticky en la parte inferior que aparezca después del primer scroll (al pasar los CTAs originales). Contenido mínimo: nombre corto del producto + precio + botón 'Comprar'. Altura máxima 64px para no invadir el contenido.",
+    mobileNote: "Patrón estándar en ecommerce mobile de alto rendimiento (Amazon, Zara, Nike). En desktop el usuario puede scrollear de regreso rápido con un click; en mobile requiere un gesto y esfuerzo explícito.",
+    severidad: 3
+  },
+  9: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Bottom navigation con 5 tabs",
+    mobileSpecific: true,
+    problema: "La barra inferior tiene 5 destinos con igual peso visual: Inicio, Buscar, Guardados, Carrito y Cuenta. En una página de producto cuyo objetivo es la conversión, esta barra ofrece 4 rutas de salida permanentemente visibles en la parte más importante de la pantalla mobile.",
+    hipotesis: "En páginas de producto, reducir la bottom nav o adaptarla: mostrar solo el carrito (con badge de cantidad) y ocultar o achicar las demás opciones. El espacio recuperado puede usarse para el CTA sticky de compra.",
+    mobileNote: "En mobile la bottom nav es la zona de mayor accesibilidad del thumb — la zona más fácil de tocar. Poner ahí 5 rutas de fuga compite directamente con el CTA de conversión.",
+    severidad: 2
+  }
+};
+
+let annotationsActive = false;
+let currentAnn = 1;
+
+function toggleAnnotations() {
+  annotationsActive = !annotationsActive;
+  document.body.classList.toggle('annotations-on', annotationsActive);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', annotationsActive);
+  btn.innerHTML = `<div class="t-dot"></div> ${annotationsActive ? 'Ocultar anotaciones' : 'Ver anotaciones'}`;
+  const sidebar = document.getElementById('issues-sidebar');
+  sidebar.classList.toggle('visible', annotationsActive);
+  if(annotationsActive && sidebar.childElementCount < 2) buildSidebar();
+}
+
+function buildSidebar() {
+  const sidebar = document.getElementById('issues-sidebar');
+  Object.entries(annotations).forEach(([num, d]) => {
+    const el = document.createElement('div');
+    el.className = 'issue-chip' + (d.mobileSpecific ? ' mobile-specific' : '');
+    el.onclick = () => openPanel(Number(num));
+    el.innerHTML = `
+      <div class="chip-num" style="background:${d.color}">${num}</div>
+      <div class="chip-info">
+        <div class="chip-heuristic">${d.heuristic}</div>
+        <div class="chip-section">${d.section}</div>
+        ${d.mobileSpecific ? '<div class="chip-mobile-label">📱 Mobile específico</div>' : ''}
+      </div>`;
+    sidebar.appendChild(el);
+  });
+}
+
+function openPanel(num) {
+  currentAnn = num;
+  const d = annotations[num];
+  document.getElementById('p-num').textContent = '#' + num;
+  const chip = document.getElementById('p-chip');
+  chip.textContent = d.heuristic;
+  chip.style.background = d.color;
+  const mobileBadge = document.getElementById('p-mobile-badge');
+  mobileBadge.style.display = d.mobileSpecific ? 'inline-flex' : 'none';
+  document.getElementById('p-section').textContent = d.section;
+  document.getElementById('p-problema').textContent = d.problema;
+  document.getElementById('p-hipotesis').textContent = d.hipotesis;
+  const noteBlock = document.getElementById('p-mobile-note');
+  if(d.mobileNote) {
+    noteBlock.style.display = 'block';
+    document.getElementById('p-mobile-note-text').textContent = d.mobileNote;
+  } else { noteBlock.style.display = 'none'; }
+  const sevDiv = document.getElementById('p-sev');
+  sevDiv.innerHTML = '';
+  for(let i=1;i<=3;i++){
+    const pip = document.createElement('div');
+    pip.className = 'sev-pip' + (i<=d.severidad ? ' filled' : '');
+    if(i<=d.severidad) pip.style.background = d.color;
+    sevDiv.appendChild(pip);
+  }
+  sevDiv.insertAdjacentHTML('beforeend',
+    `<span style="font-size:12px;color:#999;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`);
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  const t = document.getElementById('ann-target-'+num);
+  if(t) t.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+
+function nav(dir) {
+  const keys = Object.keys(annotations).map(Number);
+  let idx = keys.indexOf(currentAnn) + dir;
+  if(idx<0) idx=keys.length-1;
+  if(idx>=keys.length) idx=0;
+  openPanel(keys[idx]);
+}
+
+function closePopup() {
+  document.getElementById('popup-overlay').style.display='none';
+}
+
+document.querySelectorAll('.m-acc-trigger').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.parentElement.classList.toggle('open');
+    btn.querySelector('span').textContent = btn.parentElement.classList.contains('open') ? '−' : '＋';
+  });
+});
+document.querySelectorAll('.m-size:not(.unavail)').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.m-size').forEach(b=>b.classList.remove('sel'));
+    btn.classList.add('sel');
+  });
+});
+</script>
+</body>
+</html>
