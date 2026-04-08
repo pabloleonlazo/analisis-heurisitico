@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico Mobile — Lead Gen</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: #111; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px 140px; color: #1a1a1a;
+}
+
+/* ─── HEADER ────────────────────────────────────────────────── */
+.lab-header { text-align: center; margin-bottom: 32px; }
+.lab-eyebrow { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #666; font-weight: 600; margin-bottom: 10px; }
+.lab-header h1 { font-size: 26px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+.lab-header p { font-size: 13px; color: #888; max-width: 420px; line-height: 1.6; }
+
+.legend-bar { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 36px; }
+.leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #aaa; font-weight: 500; }
+.leg-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* ─── SCENE ─────────────────────────────────────────────────── */
+.phone-scene { position: relative; display: flex; gap: 32px; align-items: flex-start; justify-content: center; width: 100%; max-width: 880px; }
+
+/* ─── PHONE FRAME ───────────────────────────────────────────── */
+.phone-wrapper { position: relative; flex-shrink: 0; }
+.phone-frame {
+  width: 390px; height: 780px;
+  background: #0a0a0a; border-radius: 52px; padding: 14px;
+  box-shadow: 0 0 0 1px #333, 0 0 0 3px #1a1a1a, 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 1px #2a2a2a;
+  position: relative;
+}
+.phone-frame::before {
+  content: ''; position: absolute; left: -4px; top: 120px;
+  width: 4px; height: 36px; background: #2a2a2a; border-radius: 2px 0 0 2px;
+  box-shadow: 0 52px 0 #2a2a2a, 0 96px 0 #2a2a2a;
+}
+.phone-frame::after {
+  content: ''; position: absolute; right: -4px; top: 160px;
+  width: 4px; height: 68px; background: #2a2a2a; border-radius: 0 2px 2px 0;
+}
+.phone-inner {
+  width: 100%; height: 100%; background: #fff; border-radius: 40px;
+  overflow: hidden; position: relative; display: flex; flex-direction: column;
+}
+.status-bar {
+  background: #fff; padding: 14px 24px 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.status-time { font-size: 15px; font-weight: 600; }
+.status-icons { display: flex; gap: 5px; align-items: center; font-size: 12px; }
+.dynamic-island {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 34px; background: #0a0a0a; border-radius: 20px; z-index: 20;
+}
+.phone-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
+}
+.phone-scroll::-webkit-scrollbar { display: none; }
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated { position: relative; }
+.ann-badge {
+  display: none; position: absolute; z-index: 200;
+  width: 24px; height: 24px; border-radius: 50%;
+  font-size: 11px; font-weight: 800; color: #fff;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  border: 2px solid rgba(255,255,255,0.95);
+  transition: transform 0.15s;
+  top: -8px; right: -8px;
+}
+.ann-badge:hover { transform: scale(1.25); }
+.ann-badge.active-badge { transform: scale(1.3); box-shadow: 0 0 0 3px rgba(255,255,255,0.4); }
+.annotations-on .ann-badge { display: flex; }
+.annotations-on .annotated { outline: 2px dashed; outline-offset: 1px; border-radius: 2px; }
+
+.h-friccion    { background: #DC2626; }
+.h-distraccion { background: #7C3AED; }
+.h-claridad    { background: #D97706; }
+.h-valor       { background: #059669; }
+.ann-friccion    { outline-color: rgba(220,38,38,0.22) !important; }
+.ann-distraccion { outline-color: rgba(124,58,237,0.22) !important; }
+.ann-claridad    { outline-color: rgba(217,119,6,0.22) !important; }
+.ann-valor       { outline-color: rgba(5,150,105,0.22) !important; }
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel {
+  position: fixed; top: 0; right: -430px; width: 410px; height: 100vh;
+  background: #fff; border-left: 1px solid #e8e8e8;
+  z-index: 2000; transition: right 0.3s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto; display: flex; flex-direction: column;
+  box-shadow: -6px 0 32px rgba(0,0,0,0.12);
+}
+#ann-panel.open { right: 0; }
+#panel-header {
+  padding: 20px 20px 16px; border-bottom: 1px solid #f2f2f2;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 2;
+}
+#panel-header h3 { font-size: 11px; font-weight: 700; color: #c0c0c0; letter-spacing: 0.1em; text-transform: uppercase; }
+#close-panel {
+  cursor: pointer; width: 30px; height: 30px; border-radius: 50%;
+  background: #f5f5f5; border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #666; line-height: 1;
+}
+#close-panel:hover { background: #ebebeb; }
+#panel-body { padding: 22px 20px; flex: 1; }
+.p-num { font-size: 52px; font-weight: 200; color: #ebebeb; line-height: 1; }
+.p-chip {
+  display: inline-flex; align-items: center;
+  padding: 4px 13px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; color: #fff;
+  margin-bottom: 6px; letter-spacing: 0.03em;
+}
+.p-mobile-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #f0f9ff; color: #0369A1;
+  font-size: 10px; font-weight: 700; padding: 3px 9px;
+  border-radius: 10px; margin-left: 6px; vertical-align: middle;
+}
+.p-section { font-size: 19px; font-weight: 600; color: #111; margin-bottom: 18px; line-height: 1.3; margin-top: 10px; }
+.p-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #c0c0c0; margin-bottom: 6px; margin-top: 18px; }
+.p-text { font-size: 14px; line-height: 1.7; color: #444; }
+.p-mobile-note {
+  margin-top: 16px; padding: 12px 14px; background: #f0f9ff;
+  border-radius: 8px; border-left: 3px solid #0369A1;
+  font-size: 13px; line-height: 1.6; color: #334;
+}
+.p-mobile-note strong { display: block; font-size: 10px; font-weight: 700; color: #0369A1; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.p-leadgen-note {
+  margin-top: 12px; padding: 12px 14px; background: #fdf8f0;
+  border-radius: 8px; border-left: 3px solid #D97706;
+  font-size: 13px; line-height: 1.6; color: #554;
+}
+.p-leadgen-note strong { display: block; font-size: 10px; font-weight: 700; color: #D97706; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.sev-row { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.sev-pip { width: 32px; height: 7px; border-radius: 4px; background: #eee; }
+#panel-nav {
+  display: flex; gap: 8px; padding: 16px 20px;
+  border-top: 1px solid #f2f2f2; position: sticky; bottom: 0; background: #fff;
+}
+#panel-nav button {
+  flex: 1; padding: 9px; border-radius: 8px;
+  border: 1px solid #e8e8e8; background: #fff;
+  font-size: 13px; cursor: pointer; color: #555;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+#panel-nav button:hover { background: #f8f8f8; }
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 1900; }
+#overlay.show { display: block; }
+
+/* ─── TOOLBAR ───────────────────────────────────────────────── */
+#lab-toolbar {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: #1c1c1e; border-radius: 40px; padding: 10px 22px;
+  display: flex; align-items: center; gap: 14px; z-index: 800;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07);
+  white-space: nowrap;
+}
+.tb-label { font-size: 11px; color: #666; font-weight: 600; letter-spacing: 0.06em; }
+.tb-sep { width: 1px; height: 18px; background: #333; }
+#toggle-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: #2c2c2e; border: 1px solid #3a3a3c;
+  border-radius: 24px; padding: 7px 16px;
+  cursor: pointer; color: #fff; font-size: 13px; font-weight: 500;
+  transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+}
+#toggle-btn:hover { background: #3a3a3c; }
+#toggle-btn.on { background: #5B21B6; border-color: #7C3AED; }
+.t-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; transition: background 0.2s; }
+#toggle-btn.on .t-dot { background: #c4b5fd; }
+
+/* ─── SIDEBAR ───────────────────────────────────────────────── */
+.issues-sidebar { width: 240px; flex-shrink: 0; display: none; }
+.issues-sidebar.visible { display: block; }
+.sidebar-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #666; margin-bottom: 14px; }
+.issue-chip {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  background: #1c1c1e; margin-bottom: 6px;
+  cursor: pointer; transition: background 0.15s;
+  border: 1px solid #2a2a2a;
+}
+.issue-chip:hover { background: #252525; border-color: #3a3a3a; }
+.issue-chip.is-mobile { border-left: 2px solid #0369A1; }
+.chip-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 10px; font-weight: 800; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.chip-heuristic { font-size: 10px; color: #777; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 2px; }
+.chip-section { font-size: 12px; font-weight: 500; color: #ddd; line-height: 1.3; }
+.chip-mobile-lbl { font-size: 9px; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE LANDING CONTENT — KOVA
+════════════════════════════════════════════════════════════ */
+
+/* ISSUE #1: Hamburger nav + logo + login visibles — Distracción */
+.m-topnav {
+  padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border-bottom: 1px solid #f0f0f0;
+  position: sticky; top: 0; z-index: 50; flex-shrink: 0;
+}
+.m-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; }
+.m-logo span { color: #6D28D9; }
+.m-nav-right { display: flex; align-items: center; gap: 12px; }
+.m-login-link { font-size: 12px; color: #6D28D9; font-weight: 600; }
+.m-hamburger { background: none; border: none; cursor: pointer; padding: 4px; display: flex; flex-direction: column; gap: 4px; }
+.m-hamburger span { display: block; width: 20px; height: 2px; background: #333; border-radius: 2px; }
+
+/* ISSUE #2: Hero copy comprimido — Claridad */
+.m-hero { padding: 20px 16px 16px; background: #fff; border-bottom: 1px solid #f5f5f5; }
+.m-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6D28D9; margin-bottom: 10px; }
+.m-headline { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; line-height: 1.15; color: #0f0f0f; margin-bottom: 10px; letter-spacing: -0.5px; }
+.m-subhead { font-size: 13px; color: #888; line-height: 1.65; margin-bottom: 14px; }
+
+/* ISSUE #3: Beneficios vagos — Prop. de Valor */
+.m-benefits { list-style: none; margin-bottom: 16px; display: flex; flex-direction: column; gap: 7px; }
+.m-benefit { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #555; line-height: 1.4; }
+.m-check { width: 16px; height: 16px; background: #ede9fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #6D28D9; flex-shrink: 0; margin-top: 1px; }
+
+.m-logos-label { font-size: 10px; color: #ccc; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.m-logos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.m-logo-pill { padding: 4px 10px; background: #f5f4f2; border-radius: 5px; font-size: 10px; font-weight: 700; color: #ccc; letter-spacing: 0.04em; }
+
+/* ISSUE #4: Formulario con teclado virtual — Fricción / Mobile específico */
+.m-form-section { padding: 20px 16px; background: #f9f8f7; }
+.m-form-card { background: #fff; border-radius: 14px; padding: 20px 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.07); }
+.m-form-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #bbb; margin-bottom: 6px; }
+.m-form-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 16px; line-height: 1.3; }
+.m-form-group { margin-bottom: 10px; }
+.m-form-label { font-size: 11px; font-weight: 600; color: #666; margin-bottom: 4px; display: block; }
+.m-form-label .req { color: #DC2626; margin-left: 2px; }
+.m-form-input, .m-form-select {
+  width: 100%; padding: 11px 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-size: 16px; /* 16px evita zoom en iOS, pero aquí es el issue */
+  color: #1a1a1a; font-family: 'Plus Jakarta Sans', sans-serif;
+  outline: none; background: #fff;
+}
+.m-form-input::placeholder { color: #ccc; font-size: 14px; }
+.m-form-select { color: #bbb; font-size: 14px; }
+
+/* Nota de teclado — visible solo con anotaciones */
+.m-keyboard-ghost {
+  display: none;
+  background: #e8e8e8; border-radius: 8px;
+  height: 220px; width: 100%;
+  margin-top: 8px;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 6px;
+  color: #999; font-size: 12px;
+}
+.annotations-on .m-keyboard-ghost { display: flex; }
+
+/* ISSUE #5: Sin privacidad ni qué sigue — Fricción */
+.m-privacy-ghost { font-size: 11px; color: #ddd; margin-bottom: 12px; line-height: 1.5; }
+
+/* ISSUE #6: CTA genérico — Claridad */
+.m-submit {
+  width: 100%; padding: 14px;
+  background: #6D28D9; color: #fff; border: none; border-radius: 10px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ISSUE #7: Prueba social enterrada bajo el form — Prop. de Valor */
+.m-social { padding: 20px 16px; }
+.m-social-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #bbb; text-align: center; margin-bottom: 14px; }
+.m-testi-scroll { display: flex; flex-direction: column; gap: 10px; }
+.m-testi {
+  background: #fff; border-radius: 10px; padding: 14px;
+  border: 1px solid #f0f0f0;
+}
+.m-testi-text { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 10px; font-style: italic; }
+.m-testi-author { display: flex; align-items: center; gap: 8px; }
+.m-testi-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+.m-testi-name { font-size: 12px; font-weight: 600; }
+.m-testi-role { font-size: 10px; color: #aaa; }
+
+/* Features */
+.m-features { padding: 16px; }
+.m-features-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+.m-feat { display: flex; gap: 12px; padding: 12px; background: #fff; border-radius: 10px; margin-bottom: 8px; border: 1px solid #f0f0f0; }
+.m-feat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.m-feat-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.m-feat-desc { font-size: 12px; color: #888; line-height: 1.5; }
+
+/* ISSUE #8: Footer completo — Distracción / Mobile específico */
+.m-footer { background: #0f0f0f; padding: 28px 16px 20px; }
+.m-footer-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+.m-footer-logo span { color: #a78bfa; }
+.m-footer-desc { font-size: 12px; color: #666; line-height: 1.6; margin-bottom: 20px; }
+.m-footer-section { margin-bottom: 16px; }
+.m-footer-section h4 { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #555; margin-bottom: 10px; }
+.m-footer-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.m-footer-links a { font-size: 12px; color: #777; text-decoration: none; }
+.m-footer-bottom { border-top: 1px solid #222; padding-top: 16px; margin-top: 4px; font-size: 11px; color: #555; }
+
+/* ISSUE #9: Sin CTA sticky post-scroll — Fricción / Mobile específico */
+.m-sticky-cta-absent {
+  display: none;
+  position: absolute; bottom: 44px; left: 0; right: 0;
+  background: rgba(220,38,38,0.07); border-top: 1.5px dashed #DC2626;
+  padding: 6px 16px; font-size: 10px; color: #DC2626; font-weight: 600;
+  letter-spacing: 0.04em; text-align: center; z-index: 50;
+}
+.annotations-on .m-sticky-cta-absent { display: block; }
+
+/* Bottom nav — parte del Issue #8 en mobile */
+.m-bottom-nav {
+  background: #fff; border-top: 1px solid #f0f0f0;
+  display: flex; justify-content: space-around;
+  padding: 8px 0 20px; flex-shrink: 0;
+}
+.m-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9px; color: #ccc; font-weight: 500; cursor: pointer; }
+.m-tab.active { color: #6D28D9; }
+.m-tab-icon { font-size: 18px; line-height: 1; }
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="closePanel()"></div>
+<div id="ann-panel">
+  <div id="panel-header">
+    <h3>Issue heurístico</h3>
+    <button id="close-panel" onclick="closePanel()">×</button>
+  </div>
+  <div id="panel-body">
+    <div class="p-num" id="p-num">#1</div>
+    <div style="margin-bottom:10px;">
+      <span class="p-chip" id="p-chip"></span>
+      <span class="p-mobile-badge" id="p-mobile-badge" style="display:none">📱 Mobile específico</span>
+    </div>
+    <div class="p-section" id="p-section"></div>
+    <div class="p-lbl">Problema identificado</div>
+    <div class="p-text" id="p-problema"></div>
+    <div class="p-lbl">Hipótesis de mejora</div>
+    <div class="p-text" id="p-hipotesis"></div>
+    <div class="p-mobile-note" id="p-mobile-note" style="display:none">
+      <strong>Por qué es más crítico en mobile</strong>
+      <span id="p-mobile-note-text"></span>
+    </div>
+    <div class="p-leadgen-note" id="p-leadgen-note" style="display:none">
+      <strong>Específico de landing de captación</strong>
+      <span id="p-leadgen-note-text"></span>
+    </div>
+    <div class="p-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-nav">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- ══════ HEADER ══════ -->
+<div class="lab-header">
+  <div class="lab-eyebrow">🔬 Laboratorio ResearchXL</div>
+  <h1>Análisis heurístico — Lead Gen Mobile</h1>
+  <p>Landing de captación ficticia (KOVA) con problemas heurísticos intencionales. Activa las anotaciones para revelarlos.</p>
+</div>
+
+<div class="legend-bar">
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#0369A1"></div>📱 Mobile específico</div>
+</div>
+
+<!-- ══════ SCENE ══════ -->
+<div class="phone-scene">
+
+  <div class="issues-sidebar" id="issues-sidebar">
+    <div class="sidebar-title">Issues detectados</div>
+  </div>
+
+  <div class="phone-wrapper">
+    <div class="phone-frame">
+      <div class="phone-inner">
+
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="dynamic-island"></div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="phone-scroll" id="phone-scroll">
+
+          <!-- ISSUE #1: Nav con hamburger + login + logo clickeable → Distracción -->
+          <div class="annotated ann-distraccion" id="ann-target-1">
+            <div class="m-topnav">
+              <div class="m-logo">K<span>O</span>VA</div>
+              <div class="m-nav-right">
+                <span class="m-login-link">Iniciar sesión</span>
+                <button class="m-hamburger">
+                  <span></span><span></span><span></span>
+                </button>
+              </div>
+            </div>
+            <span class="ann-badge h-distraccion" style="top:6px;right:4px;" onclick="openPanel(1)">1</span>
+          </div>
+
+          <!-- ISSUE #2: Headline genérico y cuerpo sin escaneo fácil → Claridad -->
+          <div class="annotated ann-claridad ann-target" id="ann-target-2">
+            <div class="m-hero">
+              <div class="m-eyebrow">Analytics · Reporting · Growth</div>
+              <h1 class="m-headline">Lleva tu equipo al siguiente nivel</h1>
+              <p class="m-subhead">Una plataforma diseñada para que tu empresa tome mejores decisiones con datos en tiempo real. Fácil de usar, poderosa de implementar.</p>
+
+              <!-- ISSUE #3: Beneficios vagos → Prop. de Valor -->
+              <div class="annotated ann-valor" id="ann-target-3">
+                <ul class="m-benefits">
+                  <li class="m-benefit"><div class="m-check">✓</div>Mejora la eficiencia de tu equipo</li>
+                  <li class="m-benefit"><div class="m-check">✓</div>Visualización de datos en tiempo real</li>
+                  <li class="m-benefit"><div class="m-check">✓</div>Integración con tus herramientas existentes</li>
+                </ul>
+                <span class="ann-badge h-valor" style="top:-6px;right:-6px;" onclick="openPanel(3)">3</span>
+              </div>
+
+              <div class="m-logos-label">Usado por equipos en</div>
+              <div class="m-logos">
+                <div class="m-logo-pill">ACME</div>
+                <div class="m-logo-pill">GLOBEX</div>
+                <div class="m-logo-pill">INITECH</div>
+              </div>
+            </div>
+            <span class="ann-badge h-claridad" style="top:-6px;right:-6px;" onclick="openPanel(2)">2</span>
+          </div>
+
+          <!-- ISSUE #4: Formulario + teclado virtual ocupa todo el viewport → Fricción -->
+          <div class="annotated ann-friccion" id="ann-target-4">
+            <div class="m-form-section">
+              <div class="m-form-card">
+                <div class="m-form-eyebrow">Solicita tu demo</div>
+                <div class="m-form-title">Habla con un especialista</div>
+
+                <div class="m-form-group">
+                  <label class="m-form-label">Nombre <span class="req">*</span></label>
+                  <input class="m-form-input" type="text" placeholder="Juan García" readonly>
+                </div>
+                <div class="m-form-group">
+                  <label class="m-form-label">Email corporativo <span class="req">*</span></label>
+                  <input class="m-form-input" type="email" placeholder="juan@empresa.com" readonly>
+                </div>
+                <div class="m-form-group">
+                  <label class="m-form-label">Empresa <span class="req">*</span></label>
+                  <input class="m-form-input" type="text" placeholder="Mi Empresa S.A." readonly>
+                </div>
+                <div class="m-form-group">
+                  <label class="m-form-label">Cargo <span class="req">*</span></label>
+                  <input class="m-form-input" type="text" placeholder="Director de Marketing" readonly>
+                </div>
+                <div class="m-form-group">
+                  <label class="m-form-label">Teléfono <span class="req">*</span></label>
+                  <input class="m-form-input" type="tel" placeholder="+56 9 1234 5678" readonly>
+                </div>
+                <div class="m-form-group">
+                  <label class="m-form-label">Tamaño de empresa</label>
+                  <select class="m-form-select">
+                    <option>Seleccionar...</option>
+                    <option>1–50 empleados</option>
+                    <option>51–200 empleados</option>
+                    <option>200+</option>
+                  </select>
+                </div>
+
+                <!-- Fantasma de teclado virtual -->
+                <div class="m-keyboard-ghost">
+                  <span style="font-size:16px;">⌨️</span>
+                  <span>Teclado virtual ocupa ~220px</span>
+                  <span style="font-size:11px;color:#bbb;">El CTA queda fuera del viewport</span>
+                </div>
+
+                <!-- ISSUE #5: Sin privacidad ni expectativa → Fricción -->
+                <div class="annotated ann-friccion" id="ann-target-5" style="margin:10px 0;">
+                  <p class="m-privacy-ghost">Al hacer clic aceptas nuestros términos.</p>
+                  <span class="ann-badge h-friccion" style="top:-6px;right:-6px;" onclick="openPanel(5)">5</span>
+                </div>
+
+                <!-- ISSUE #6: CTA genérico → Claridad -->
+                <div class="annotated ann-claridad" id="ann-target-6">
+                  <button class="m-submit">Enviar</button>
+                  <span class="ann-badge h-claridad" style="top:-6px;right:-6px;" onclick="openPanel(6)">6</span>
+                </div>
+
+              </div>
+            </div>
+            <span class="ann-badge h-friccion" style="top:-6px;right:8px;" onclick="openPanel(4)">4</span>
+          </div>
+
+          <!-- ISSUE #7: Prueba social completamente debajo del form → Prop. de Valor -->
+          <div class="annotated ann-valor" id="ann-target-7">
+            <div class="m-social">
+              <div class="m-social-label">Lo que dicen nuestros clientes</div>
+              <div class="m-testi-scroll">
+                <div class="m-testi">
+                  <div class="m-testi-text">Reducimos el tiempo de reporte de 6 horas a 20 minutos. El ROI fue evidente en el primer mes.</div>
+                  <div class="m-testi-author">
+                    <div class="m-testi-avatar" style="background:#6D28D9;">MP</div>
+                    <div><div class="m-testi-name">María Pacheco</div><div class="m-testi-role">CMO · Grupo Retail Norte</div></div>
+                  </div>
+                </div>
+                <div class="m-testi">
+                  <div class="m-testi-text">La implementación tomó 2 días. Por fin conectamos nuestro CRM con Google Ads sin equipo técnico.</div>
+                  <div class="m-testi-author">
+                    <div class="m-testi-avatar" style="background:#059669;">RL</div>
+                    <div><div class="m-testi-name">Rodrigo Lagos</div><div class="m-testi-role">Director Digital · FinTech Andina</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <span class="ann-badge h-valor" style="top:-6px;right:-6px;" onclick="openPanel(7)">7</span>
+          </div>
+
+          <!-- Features -->
+          <div class="m-features">
+            <div class="m-features-title">Todo lo que necesitas</div>
+            <div class="m-feat">
+              <div class="m-feat-icon" style="background:#ede9fe;">📊</div>
+              <div><div class="m-feat-title">Dashboards en tiempo real</div><div class="m-feat-desc">Actualizaciones automáticas cada 60 segundos.</div></div>
+            </div>
+            <div class="m-feat">
+              <div class="m-feat-icon" style="background:#ecfdf5;">🔗</div>
+              <div><div class="m-feat-title">150+ integraciones nativas</div><div class="m-feat-desc">CRM, ERP, Google Ads, Meta, y más.</div></div>
+            </div>
+            <div class="m-feat">
+              <div class="m-feat-icon" style="background:#fef9ec;">🤖</div>
+              <div><div class="m-feat-title">Alertas inteligentes</div><div class="m-feat-desc">Notificaciones cuando las métricas se desvían.</div></div>
+            </div>
+          </div>
+
+          <!-- Indicador CTA sticky ausente -->
+          <div class="m-sticky-cta-absent" id="sticky-indicator">
+            ▲ El formulario ya no es visible — no hay CTA sticky
+          </div>
+
+          <!-- ISSUE #8: Footer completo con links de navegación → Distracción -->
+          <div class="annotated ann-distraccion" id="ann-target-8">
+            <div class="m-footer">
+              <div class="m-footer-logo">K<span>O</span>VA</div>
+              <div class="m-footer-desc">La plataforma de analytics para equipos de marketing y crecimiento.</div>
+              <div class="m-footer-section">
+                <h4>Producto</h4>
+                <div class="m-footer-links">
+                  <a href="#">Características</a>
+                  <a href="#">Integraciones</a>
+                  <a href="#">Precios</a>
+                  <a href="#">Changelog</a>
+                </div>
+              </div>
+              <div class="m-footer-section">
+                <h4>Recursos</h4>
+                <div class="m-footer-links">
+                  <a href="#">Blog</a>
+                  <a href="#">Documentación</a>
+                  <a href="#">Casos de éxito</a>
+                  <a href="#">Webinars</a>
+                </div>
+              </div>
+              <div class="m-footer-section">
+                <h4>Empresa</h4>
+                <div class="m-footer-links">
+                  <a href="#">Acerca de</a>
+                  <a href="#">Empleos</a>
+                  <a href="#">Contacto</a>
+                </div>
+              </div>
+              <div class="m-footer-bottom">© 2025 KOVA Analytics · <a href="#" style="color:#555;">Privacidad</a> · <a href="#" style="color:#555;">Términos</a></div>
+            </div>
+            <span class="ann-badge h-distraccion" style="top:12px;right:4px;" onclick="openPanel(8)">8</span>
+          </div>
+
+          <!-- ISSUE #9: Bottom nav con 5 tabs en landing → Distracción -->
+          <div style="height:20px;"></div>
+
+        </div><!-- /phone-scroll -->
+
+        <div class="annotated ann-distraccion" id="ann-target-9" style="position:relative; flex-shrink:0;">
+          <div class="m-bottom-nav">
+            <div class="m-tab active"><div class="m-tab-icon">🏠</div>Inicio</div>
+            <div class="m-tab"><div class="m-tab-icon">🔍</div>Buscar</div>
+            <div class="m-tab"><div class="m-tab-icon">📄</div>Recursos</div>
+            <div class="m-tab"><div class="m-tab-icon">💬</div>Chat</div>
+            <div class="m-tab"><div class="m-tab-icon">👤</div>Cuenta</div>
+          </div>
+          <span class="ann-badge h-distraccion" style="top:-10px;right:4px;" onclick="openPanel(9)">9</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO — LEAD GEN MOBILE</span>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()">
+    <div class="t-dot"></div>
+    Ver anotaciones
+  </button>
+</div>
+
+<script>
+const annotations = {
+  1: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Navegación: logo clickeable + login + hamburger",
+    mobileSpecific: false,
+    leadgen: true,
+    problema: "Aunque el menú completo está colapsado en hamburger, hay tres elementos de fuga activos: el logo (que usualmente linkea al home), el link de 'Iniciar sesión', y el menú hamburger que despliega todo el sitemap. En una landing cuyo único objetivo es que el usuario complete el formulario, estos son tres rutas de salida en la zona más visible de la pantalla.",
+    hipotesis: "Eliminar el logo como link (o que apunte al home solo en nueva pestaña). Conservar solo el link de login para usuarios ya registrados y eliminar el hamburger. Si el menú es indispensable, que solo incluya secciones de la propia landing (ancla a beneficios, testimonios, FAQ).",
+    mobileNote: null,
+    ldnote: "Las landing pages de pago (SEM/paid social) tienen un costo por clic. Cada usuario que llega y navega a otra página sin convertir es dinero que se va. Eliminar las rutas de fuga es directamente rentable.",
+    severidad: 3
+  },
+  2: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "Headline genérico sin jerarquía visual para escaneo",
+    mobileSpecific: true,
+    leadgen: true,
+    problema: "'Lleva tu equipo al siguiente nivel' no comunica qué es el producto, para quién es ni qué resultado entrega. En desktop el usuario puede ver headline + subhead + beneficios de un vistazo; en mobile el espacio es tan reducido que muchos usuarios solo leen el headline antes de decidir si continúan scrolleando.",
+    hipotesis: "Reescribir el headline con la propuesta específica: qué hace + resultado medible. Ej: 'El analytics que convierte tus datos de marketing en decisiones — en minutos'. En mobile, el headline carga casi todo el peso de la propuesta de valor porque el subhead frecuentemente queda fuera del primer viewport.",
+    mobileNote: "En mobile el primer viewport promedio muestra apenas 400–450px de contenido. Si el headline no convence, el usuario no scrollea. No hay segunda oportunidad de visibilidad como en desktop.",
+    ldnote: "El headline de una landing de lead gen B2B debe responder en 5 segundos: ¿qué es, para quién es, qué problema resuelve? Este no responde ninguna de las tres.",
+    severidad: 3
+  },
+  3: {
+    heuristic: "Propuesta de Valor",
+    color: "#059669",
+    section: "Bullets de beneficios vagos e inverificables",
+    mobileSpecific: false,
+    leadgen: true,
+    problema: "Los tres bullets usan lenguaje que cualquier competidor puede replicar palabra por palabra: 'mejora la eficiencia', 'datos en tiempo real', 'integración con tus herramientas'. No hay un solo dato cuantificado, caso concreto o diferenciador real que justifique por qué KOVA y no otra plataforma.",
+    hipotesis: "Sustituir cada bullet por un beneficio específico con número o resultado: 'Reduce el tiempo de reporte semanal de horas a minutos', 'Conecta con más de 150 plataformas — incluyendo Google Ads, Meta y tu CRM', 'Alertas automáticas antes de que quemes presupuesto en campañas que no convierten'.",
+    mobileNote: null,
+    ldnote: "En mobile los bullets son aún más críticos porque el usuario no puede ver el resto de la página simultáneamente. Si los bullets no convencen, el formulario queda fuera del contexto de valor necesario para llenarlo.",
+    severidad: 2
+  },
+  4: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Formulario de 6 campos + teclado virtual bloquea el CTA",
+    mobileSpecific: true,
+    leadgen: true,
+    problema: "El formulario tiene 6 campos. En mobile, al activar el teclado virtual, este ocupa aproximadamente 220px del viewport (iOS) o 280px (Android). Con la barra de navegación del browser y el teclado activo, el usuario pierde entre el 50–60% del espacio visible. El botón de envío queda fuera del viewport durante la edición, lo que genera confusión sobre cómo completar la acción.",
+    hipotesis: "Reducir a 3 campos máximo: email, nombre y empresa. El resto se obtiene en la llamada de calificación. Alternativamente, implementar un formulario multistep con 2 pasos de 2–3 campos cada uno, donde el CTA siempre es visible en pantalla dentro de cada paso.",
+    mobileNote: "En desktop el teclado no existe — el usuario ve el formulario y el CTA simultáneamente. En mobile el teclado virtual es el mayor enemigo de los formularios largos: fragmenta la experiencia, oculta el CTA y genera abandono en el último campo.",
+    ldnote: "Cada campo adicional en un formulario mobile tiene un costo de conversión mayor que en desktop porque implica más cambios de contexto, más taps y más tiempo con el teclado activo tapando el contenido.",
+    severidad: 3
+  },
+  5: {
+    heuristic: "Fricción",
+    color: "#DC2626",
+    section: "Sin política de privacidad ni expectativa post-envío",
+    mobileSpecific: false,
+    leadgen: true,
+    problema: "El texto legal 'Al hacer clic aceptas nuestros términos' está en color #ddd sobre blanco — contraste ~1.4:1, prácticamente invisible. No hay link a política de privacidad (requerimiento legal), no se comunica qué pasa después del envío ni en cuánto tiempo responderán.",
+    hipotesis: "Agregar: (1) link legible a política de privacidad. (2) Expectativa post-envío: 'Un especialista te escribe en menos de 24 horas hábiles.' Estos dos elementos resuelven las dos preguntas de ansiedad más frecuentes en el último paso de un formulario B2B.",
+    mobileNote: null,
+    ldnote: "La ansiedad pre-conversión en formularios B2B tiene dos focos: '¿Qué van a hacer con mis datos?' y '¿Cuándo me van a contactar y cuántas veces?'. Resolverlas en el formulario puede aumentar la tasa de envío entre un 15% y un 34%.",
+    severidad: 3
+  },
+  6: {
+    heuristic: "Claridad",
+    color: "#D97706",
+    section: "CTA del formulario: 'Enviar'",
+    mobileSpecific: false,
+    leadgen: true,
+    problema: "'Enviar' no describe el resultado de la acción, no refuerza el valor y activa psicológicamente la percepción de 'ceder mis datos'. Es el CTA más genérico y menos persuasivo posible en un formulario de captación.",
+    hipotesis: "Reemplazar por un CTA orientado al beneficio en primera persona: 'Quiero ver la demo', 'Agendar mi sesión gratuita', 'Solicitar acceso ahora'. El texto del botón es el último argumento de venta antes de la conversión — debe responder '¿qué voy a obtener?'",
+    mobileNote: null,
+    ldnote: "Estudios de CRO documentan incrementos del 15–90% en conversión al cambiar el texto del CTA de genérico ('Enviar', 'Registrarse') a orientado al beneficio. Es el cambio con mejor ratio esfuerzo/impacto en una landing.",
+    severidad: 3
+  },
+  7: {
+    heuristic: "Propuesta de Valor",
+    color: "#059669",
+    section: "Prueba social completamente debajo del formulario",
+    mobileSpecific: true,
+    leadgen: true,
+    problema: "Los testimonios con resultados concretos y cuantificados aparecen solo después de que el usuario ya pasó el formulario — es decir, después del momento de máxima fricción y decisión. En mobile, dado el scroll lineal, la prueba social llega cuando la mayoría de usuarios que iban a abandonar ya lo hicieron.",
+    hipotesis: "Mover al menos una reseña corta (nombre + cargo + frase de resultado) directamente dentro de la tarjeta del formulario, justo antes del CTA. En mobile no es viable poner la tarjeta al lado del form como en desktop, por eso debe estar integrada.",
+    mobileNote: "En desktop se puede colocar la prueba social en una columna lateral al formulario, visible simultáneamente. En mobile el layout es lineal: si la prueba social está debajo del form, el 70–80% de los usuarios que abandonan nunca la ven.",
+    ldnote: "Un solo testimonio con resultado cuantificado visible junto al CTA puede incrementar la conversión más que 5 testimonios ubicados en otra sección de la página.",
+    severidad: 3
+  },
+  8: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Footer completo con mapa del sitio",
+    mobileSpecific: false,
+    leadgen: true,
+    problema: "El footer replica la navegación completa del sitio web: Producto, Recursos, Empresa, con múltiples links en cada sección. En una landing de captación cada link es una ruta de salida. Un usuario que llega al footer sin haber convertido tiene más de 10 opciones de abandonar la página sin completar el objetivo.",
+    hipotesis: "Reemplazar con footer mínimo: logo + copyright + privacidad + términos. Sin navegación. Opcionalmente, agregar un último CTA de conversión justo antes del footer para rescatar al usuario que llegó hasta abajo sin convertir.",
+    mobileNote: "En mobile el footer se ve en pantalla completa, uno tras otro. Cada link parece una opción legítima de acción. En desktop el footer queda parcialmente oculto y se percibe más como 'pie de página'; en mobile tiene el mismo peso visual que cualquier otro elemento.",
+    ldnote: null,
+    severidad: 2
+  },
+  9: {
+    heuristic: "Distracción",
+    color: "#7C3AED",
+    section: "Bottom navigation con 5 tabs permanentes",
+    mobileSpecific: true,
+    leadgen: true,
+    problema: "La barra de navegación inferior tiene 5 tabs siempre visibles: Inicio, Buscar, Recursos, Chat y Cuenta. En una landing cuyo único objetivo es que el usuario llene el formulario, esta barra ocupa la zona de mayor accesibilidad del thumb (la zona dorada del pulgar) con 5 rutas de salida permanentes.",
+    hipotesis: "Eliminar la bottom nav en la landing page o reemplazarla por una barra de conversión sticky: [Nombre del producto] + [CTA: Solicitar demo]. Esto convierte la zona más accesible del thumb en un acelerador de conversión en lugar de un generador de fugas.",
+    mobileNote: "La zona dorada del pulgar en mobile (centro-inferior de la pantalla) es donde el usuario toca más naturalmente. Poner ahí la bottom nav con 5 opciones de salida es ceder el activo de mayor valor de interacción a rutas de abandono.",
+    ldnote: "Las landing pages de alto rendimiento en mobile no tienen bottom nav — tienen una barra sticky de conversión. La diferencia en tasa de conversión puede ser de 20–40%.",
+    severidad: 3
+  }
+};
+
+let active = false;
+let current = 1;
+
+function toggleAnnotations() {
+  active = !active;
+  document.body.classList.toggle('annotations-on', active);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', active);
+  btn.innerHTML = '<div class="t-dot"></div> ' + (active ? 'Ocultar anotaciones' : 'Ver anotaciones');
+  const sidebar = document.getElementById('issues-sidebar');
+  sidebar.classList.toggle('visible', active);
+  if (active && sidebar.children.length < 2) buildSidebar();
+}
+
+function buildSidebar() {
+  const sidebar = document.getElementById('issues-sidebar');
+  Object.entries(annotations).forEach(function(entry) {
+    var num = entry[0];
+    var d = entry[1];
+    var el = document.createElement('div');
+    el.className = 'issue-chip' + (d.mobileSpecific ? ' is-mobile' : '');
+    el.onclick = function() { openPanel(Number(num)); };
+    el.innerHTML =
+      '<div class="chip-num" style="background:' + d.color + '">' + num + '</div>' +
+      '<div>' +
+        '<div class="chip-heuristic">' + d.heuristic + '</div>' +
+        '<div class="chip-section">' + d.section + '</div>' +
+        (d.mobileSpecific ? '<div class="chip-mobile-lbl">📱 Mobile específico</div>' : '') +
+      '</div>';
+    sidebar.appendChild(el);
+  });
+}
+
+function openPanel(num) {
+  current = num;
+  var d = annotations[num];
+  document.getElementById('p-num').textContent = '#' + num;
+  var chip = document.getElementById('p-chip');
+  chip.textContent = d.heuristic;
+  chip.style.background = d.color;
+  var mb = document.getElementById('p-mobile-badge');
+  mb.style.display = d.mobileSpecific ? 'inline-flex' : 'none';
+  document.getElementById('p-section').textContent = d.section;
+  document.getElementById('p-problema').textContent = d.problema;
+  document.getElementById('p-hipotesis').textContent = d.hipotesis;
+  var mn = document.getElementById('p-mobile-note');
+  if (d.mobileNote) {
+    mn.style.display = 'block';
+    document.getElementById('p-mobile-note-text').textContent = d.mobileNote;
+  } else { mn.style.display = 'none'; }
+  var ln = document.getElementById('p-leadgen-note');
+  if (d.ldnote) {
+    ln.style.display = 'block';
+    document.getElementById('p-leadgen-note-text').textContent = d.ldnote;
+  } else { ln.style.display = 'none'; }
+  var sevDiv = document.getElementById('p-sev');
+  sevDiv.innerHTML = '';
+  for (var i = 1; i <= 3; i++) {
+    var pip = document.createElement('div');
+    pip.className = 'sev-pip';
+    pip.style.background = i <= d.severidad ? d.color : '#eee';
+    sevDiv.appendChild(pip);
+  }
+  sevDiv.insertAdjacentHTML('beforeend',
+    '<span style="font-size:12px;color:#aaa;margin-left:8px;">' +
+    (d.severidad === 3 ? 'Alta' : d.severidad === 2 ? 'Media' : 'Baja') + '</span>');
+  document.querySelectorAll('.ann-badge').forEach(function(b) { b.classList.remove('active-badge'); });
+  var target = document.getElementById('ann-target-' + num);
+  if (target) {
+    var badge = target.querySelector('.ann-badge');
+    if (badge) badge.classList.add('active-badge');
+  }
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(function(b) { b.classList.remove('active-badge'); });
+}
+
+function nav(dir) {
+  var keys = Object.keys(annotations).map(Number);
+  var idx = keys.indexOf(current) + dir;
+  if (idx < 0) idx = keys.length - 1;
+  if (idx >= keys.length) idx = 0;
+  openPanel(keys[idx]);
+}
+</script>
+</body>
+</html>
