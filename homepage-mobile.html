@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico Mobile — Homepage</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#111;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px 140px;color:#1a1a1a;}
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated{position:relative;}
+.ann-badge{display:none;position:absolute;z-index:200;width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:800;color:#fff;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.35);border:2px solid rgba(255,255,255,0.95);transition:transform 0.15s;top:-8px;right:-8px;}
+.ann-badge:hover{transform:scale(1.25);}
+.ann-badge.active-badge{transform:scale(1.3);box-shadow:0 0 0 3px rgba(255,255,255,0.4);}
+.annotations-on .ann-badge{display:flex;}
+.annotations-on .annotated{outline:2px dashed;outline-offset:1px;border-radius:2px;}
+.h-friccion{background:#DC2626;} .h-distraccion{background:#7C3AED;} .h-claridad{background:#D97706;} .h-valor{background:#059669;}
+.ann-friccion{outline-color:rgba(220,38,38,0.25)!important;} .ann-distraccion{outline-color:rgba(124,58,237,0.25)!important;} .ann-claridad{outline-color:rgba(217,119,6,0.25)!important;} .ann-valor{outline-color:rgba(5,150,105,0.25)!important;}
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel{position:fixed;top:0;right:-440px;width:420px;height:100vh;background:#fff;border-left:1px solid #e8e8e8;z-index:2000;transition:right 0.3s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,0.15);}
+#ann-panel.open{right:0;}
+#panel-header{padding:20px 20px 16px;border-bottom:1px solid #f2f2f2;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;}
+#panel-header h3{font-size:11px;font-weight:700;color:#bbb;letter-spacing:0.1em;text-transform:uppercase;}
+#close-panel{cursor:pointer;width:32px;height:32px;border-radius:50%;background:#f5f5f5;border:none;display:flex;align-items:center;justify-content:center;font-size:18px;color:#555;}
+#close-panel:hover{background:#ebebeb;}
+#panel-body{padding:24px 20px;flex:1;}
+.panel-num{font-size:48px;font-weight:200;color:#e8e8e8;line-height:1;}
+.panel-heuristic-chip{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;margin-bottom:12px;}
+.panel-mobile-badge{display:inline-flex;align-items:center;gap:4px;background:#f0f9ff;color:#0369A1;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:10px;margin-left:6px;vertical-align:middle;}
+.panel-section-title{font-size:19px;font-weight:600;color:#111;margin-bottom:18px;line-height:1.3;}
+.panel-lbl{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#bbb;margin-bottom:6px;margin-top:18px;}
+.panel-text{font-size:14px;line-height:1.7;color:#444;}
+.panel-mobile-only{margin-top:16px;padding:12px 14px;background:#f0f9ff;border-radius:8px;border-left:3px solid #0369A1;font-size:13px;line-height:1.6;color:#334;}
+.panel-mobile-only strong{display:block;font-size:11px;font-weight:700;color:#0369A1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+.sev-row{display:flex;align-items:center;gap:4px;margin-top:6px;}
+.sev-pip{width:28px;height:7px;border-radius:4px;}
+#panel-footer{display:flex;gap:8px;padding:16px 20px;border-top:1px solid #f2f2f2;position:sticky;bottom:0;background:#fff;}
+#panel-footer button{flex:1;padding:9px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;font-size:13px;cursor:pointer;color:#555;font-family:'DM Sans',sans-serif;}
+#panel-footer button:hover{background:#f8f8f8;}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:1900;}
+#overlay.show{display:block;}
+
+/* ─── TOOLBAR ───────────────────────────────────────────────── */
+#lab-toolbar{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1c1c1e;border-radius:40px;padding:10px 22px;display:flex;align-items:center;gap:14px;z-index:800;box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.07);white-space:nowrap;}
+.tb-label{font-size:11px;color:#666;font-weight:600;letter-spacing:0.06em;}
+.tb-sep{width:1px;height:18px;background:#333;}
+#toggle-btn{display:flex;align-items:center;gap:8px;background:#2c2c2e;border:1px solid #3a3a3c;border-radius:24px;padding:7px 16px;cursor:pointer;color:#fff;font-size:13px;font-weight:500;transition:all 0.2s;font-family:'DM Sans',sans-serif;}
+#toggle-btn:hover{background:#3a3a3c;}
+#toggle-btn.on{background:#5B21B6;border-color:#7C3AED;}
+.t-dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background 0.2s;}
+#toggle-btn.on .t-dot{background:#c4b5fd;}
+
+/* ─── ISSUES SIDEBAR ─────────────────────────────────────────── */
+.issues-sidebar{width:260px;flex-shrink:0;display:none;}
+.issues-sidebar.visible{display:block;}
+.sidebar-title{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:14px;}
+.issue-chip{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:#1c1c1e;margin-bottom:6px;cursor:pointer;transition:background 0.15s;border:1px solid #2a2a2a;}
+.issue-chip:hover{background:#252525;border-color:#3a3a3a;}
+.issue-chip.mobile-specific{border-left:2px solid #0369A1;}
+.chip-num{width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.chip-heuristic{font-size:10px;color:#888;font-weight:600;letter-spacing:0.04em;margin-bottom:2px;}
+.chip-section{font-size:12px;font-weight:500;color:#ddd;line-height:1.3;}
+.chip-mobile-label{font-size:9px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;}
+
+/* ─── PAGE HEADER ───────────────────────────────────────────── */
+.lab-header{text-align:center;margin-bottom:36px;}
+.lab-eyebrow{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#666;font-weight:600;margin-bottom:10px;}
+.lab-header h1{font-size:26px;font-weight:600;color:#fff;margin-bottom:8px;}
+.lab-header p{font-size:13px;color:#888;max-width:420px;line-height:1.6;}
+.legend-bar{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:36px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;font-weight:500;}
+.leg-dot{width:9px;height:9px;border-radius:50%;}
+
+/* ─── PHONE ─────────────────────────────────────────────────── */
+.phone-scene{position:relative;display:flex;gap:32px;align-items:flex-start;justify-content:center;width:100%;max-width:880px;}
+.phone-wrapper{position:relative;flex-shrink:0;}
+.phone-frame{width:390px;height:820px;background:#0a0a0a;border-radius:52px;padding:14px;box-shadow:0 0 0 1px #333,0 0 0 3px #1a1a1a,0 40px 80px rgba(0,0,0,0.6),inset 0 0 0 1px #2a2a2a;position:relative;}
+.phone-frame::before{content:'';position:absolute;left:-4px;top:120px;width:4px;height:36px;background:#2a2a2a;border-radius:2px 0 0 2px;box-shadow:0 52px 0 #2a2a2a,0 96px 0 #2a2a2a;}
+.phone-frame::after{content:'';position:absolute;right:-4px;top:160px;width:4px;height:68px;background:#2a2a2a;border-radius:0 2px 2px 0;}
+.phone-inner{width:100%;height:100%;background:#f8f7f5;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+.status-bar{background:#fff;padding:14px 24px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10;}
+.status-time{font-size:15px;font-weight:600;}
+.status-icons{display:flex;gap:5px;align-items:center;font-size:12px;}
+.dynamic-island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#0a0a0a;border-radius:20px;z-index:20;}
+.phone-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.phone-scroll::-webkit-scrollbar{display:none;}
+
+/* ─── MOBILE SITE CONTENT ───────────────────────────────────── */
+
+/* ISSUE #9: Nav hamburguesa sin búsqueda rápida accesible */
+.m-nav{background:#fff;padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f0f0;position:sticky;top:0;z-index:50;}
+.m-logo{font-family:'DM Serif Display',serif;font-size:20px;}
+.m-logo sup{font-family:'DM Sans',sans-serif;font-size:9px;color:#888;vertical-align:super;}
+.m-nav-icons{display:flex;gap:12px;}
+.m-icon-btn{background:none;border:none;cursor:pointer;font-size:20px;padding:4px;position:relative;}
+.m-cart-dot{position:absolute;top:0;right:0;width:8px;height:8px;background:#DC2626;border-radius:50%;border:1px solid #fff;}
+/* Sin barra de búsqueda accesible directamente — issue #9 */
+
+/* ISSUE #1: Hero con headline genérico + ISSUE #2: CTA pequeño + ISSUE #3: Sin urgencia + ISSUE #4: Carousel sin controles */
+.m-hero{background:linear-gradient(145deg,#0f1c14 0%,#1a3a26 60%,#2d5a3d 100%);padding:36px 20px 28px;position:relative;overflow:hidden;}
+.m-hero-bg{position:absolute;right:-40px;bottom:-20px;font-family:'DM Serif Display',serif;font-size:180px;line-height:1;color:rgba(255,255,255,0.04);pointer-events:none;user-select:none;}
+.m-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#86efac;margin-bottom:12px;}
+/* ISSUE #1: Headline genérico */
+.m-hero-title{font-family:'DM Serif Display',serif;font-size:36px;line-height:1.1;color:#fff;margin-bottom:10px;}
+/* ISSUE #2: Subtítulo genérico */
+.m-hero-sub{font-size:14px;color:rgba(255,255,255,0.6);line-height:1.5;margin-bottom:20px;}
+/* ISSUE #2: CTA "Explorar" vago + tamaño justo en el límite */
+.m-hero-cta{display:inline-block;padding:13px 28px;background:#fff;color:#1a1a1a;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+/* ISSUE #3: Sin urgencia, sin countdown, sin badge de oferta */
+/* ISSUE #4: Dots sin controles, autoplay implícito */
+.m-hero-dots{display:flex;gap:5px;margin-top:20px;}
+.m-dot{width:20px;height:3px;border-radius:2px;background:rgba(255,255,255,0.2);}
+.m-dot.active{background:#fff;}
+
+/* ISSUE #5: Announcement bar sin jerarquía en mobile — posición sub-óptima */
+.m-announcement{background:#1a1a1a;color:#fff;text-align:center;padding:8px 16px;font-size:12px;}
+.m-announcement span{color:#fbbf24;font-weight:600;}
+
+/* ISSUE #5 (value props): Iconos en scroll horizontal sin descripción */
+.m-vp-bar{background:#fff;border-bottom:1px solid #f0f0f0;padding:12px 0;overflow-x:auto;display:flex;gap:0;white-space:nowrap;}
+.m-vp-bar::-webkit-scrollbar{display:none;}
+.m-vp-item{display:inline-flex;align-items:center;gap:8px;padding:0 16px;border-right:1px solid #f0f0f0;flex-shrink:0;}
+.m-vp-icon{font-size:16px;}
+/* Solo ícono + label corto, sin descripción — issue #5 */
+.m-vp-label{font-size:12px;font-weight:600;color:#555;}
+
+/* Categories horizontal scroll */
+.m-section{padding:24px 0;}
+.m-section-header{padding:0 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.m-section-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;margin-bottom:3px;}
+.m-section-title{font-family:'DM Serif Display',serif;font-size:22px;}
+.m-see-all{font-size:12px;font-weight:600;color:#555;text-decoration:none;border-bottom:1px solid #e0e0e0;padding-bottom:1px;}
+
+.m-cat-scroll{overflow-x:auto;padding:0 16px;display:flex;gap:10px;-webkit-overflow-scrolling:touch;}
+.m-cat-scroll::-webkit-scrollbar{display:none;}
+.m-cat-card{flex-shrink:0;width:130px;border-radius:10px;overflow:hidden;position:relative;cursor:pointer;}
+.m-cat-img{height:160px;background:linear-gradient(160deg,var(--c1),var(--c2));}
+.m-cat-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 50%);}
+.m-cat-name{position:absolute;bottom:10px;left:10px;right:10px;font-size:13px;font-weight:600;color:#fff;z-index:2;}
+
+/* ISSUE #6: Bestsellers en scroll horizontal sin indicador de progreso */
+.m-products-scroll{overflow-x:auto;padding:0 16px;display:flex;gap:12px;-webkit-overflow-scrolling:touch;}
+.m-products-scroll::-webkit-scrollbar{display:none;}
+.m-p-card{flex-shrink:0;width:150px;background:#fff;border-radius:10px;border:1px solid #f0f0f0;overflow:hidden;cursor:pointer;}
+.m-p-img{height:140px;display:flex;align-items:center;justify-content:center;}
+.m-p-img svg{width:70px;opacity:0.3;}
+/* Sin badge bestseller — issue #6 */
+.m-p-body{padding:10px;}
+.m-p-name{font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:4px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.m-p-rating{font-size:10px;color:#F59E0B;margin-bottom:4px;}
+.m-p-price{font-size:13px;font-weight:700;color:#1a1a1a;}
+.m-p-price .old{font-size:11px;font-weight:400;color:#bbb;text-decoration:line-through;display:block;}
+/* Sin scroll indicator — issue #6 */
+
+/* ISSUE #7: Social proof fuera del fold */
+.m-proof{background:#fff;padding:24px 16px;}
+.m-proof-number{font-family:'DM Serif Display',serif;font-size:48px;color:#1a1a1a;line-height:1;}
+.m-proof-number span{font-size:20px;color:#bbb;}
+.m-proof-sub{font-size:13px;color:#888;margin-top:4px;margin-bottom:16px;}
+.m-review{background:#f8f7f5;border-radius:10px;padding:14px;margin-bottom:10px;}
+.m-review-stars{font-size:12px;color:#F59E0B;margin-bottom:6px;}
+.m-review-text{font-size:13px;color:#555;line-height:1.5;font-style:italic;margin-bottom:8px;}
+.m-review-author{font-size:11px;font-weight:600;color:#aaa;}
+
+/* ISSUE #8: Newsletter sin incentivo */
+.m-newsletter{background:linear-gradient(145deg,#0f1c14,#1e3a28);padding:32px 20px;}
+.m-nl-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#86efac;margin-bottom:10px;}
+/* ISSUE #8 */
+.m-nl-title{font-family:'DM Serif Display',serif;font-size:26px;color:#fff;margin-bottom:8px;line-height:1.2;}
+.m-nl-sub{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:18px;line-height:1.5;}
+.m-nl-form{display:flex;flex-direction:column;gap:8px;}
+/* ISSUE #10: Input de texto en mobile — teclado sube, campo queda tapado */
+.m-nl-input{padding:13px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:16px;font-family:'DM Sans',sans-serif;outline:none;}
+.m-nl-input::placeholder{color:rgba(255,255,255,0.3);}
+.m-nl-btn{padding:13px;background:#fff;color:#1a1a1a;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.m-nl-disc{font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;}
+
+/* ISSUE #11: Footer expandido completo — muy largo en mobile */
+.m-footer{background:#111;padding:28px 16px 20px;}
+.m-footer-logo{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;margin-bottom:8px;}
+.m-footer-desc{font-size:12px;color:#666;margin-bottom:20px;line-height:1.5;}
+/* Sin acordeón — todos expandidos simultáneamente = issue #11 */
+.m-footer-col{margin-bottom:20px;}
+.m-footer-col h4{font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#fff;margin-bottom:10px;}
+.m-footer-col ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.m-footer-col a{font-size:13px;color:#666;text-decoration:none;}
+.m-footer-bottom{font-size:11px;color:#555;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px;}
+
+/* ISSUE #12: Sin sticky CTA bottom bar en scroll */
+.m-sticky-cta-ghost{display:none;position:absolute;bottom:44px;left:0;right:0;background:rgba(220,38,38,0.06);border-top:2px dashed #DC2626;padding:8px 16px;font-size:10px;color:#DC2626;font-weight:700;letter-spacing:0.04em;text-align:center;z-index:50;}
+.annotations-on .m-sticky-cta-ghost{display:block;}
+
+/* ISSUE #10: Chat ausente ghost */
+.m-chat-ghost{display:none;position:absolute;bottom:52px;right:10px;width:40px;height:40px;border-radius:50%;background:rgba(220,38,38,0.07);border:2px dashed #DC2626;align-items:center;justify-content:center;font-size:9px;color:#DC2626;font-weight:700;z-index:60;text-align:center;line-height:1.2;cursor:pointer;}
+.annotations-on .m-chat-ghost{display:flex;}
+
+/* Bottom nav ISSUE for mobile — no tiene issue específico de bottom nav en homepage, pero hay tab de cuenta */
+.m-bottom-nav{background:#fff;border-top:1px solid #f0f0f0;display:flex;justify-content:space-around;padding:8px 0 20px;flex-shrink:0;}
+.m-tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;color:#bbb;font-weight:500;cursor:pointer;}
+.m-tab.active{color:#1a1a1a;}
+.m-tab-icon{font-size:20px;line-height:1;}
+</style>
+</head>
+<body>
+<div id="overlay" onclick="closePanel()"></div>
+
+<!-- PANEL -->
+<div id="ann-panel">
+  <div id="panel-header"><h3>Issue heurístico</h3><button id="close-panel" onclick="closePanel()">×</button></div>
+  <div id="panel-body">
+    <div class="panel-num" id="p-num">#1</div>
+    <div id="p-chip" class="panel-heuristic-chip"></div><span id="p-mobile-badge" class="panel-mobile-badge" style="display:none">📱 Mobile específico</span>
+    <div class="panel-section-title" id="p-section"></div>
+    <div class="panel-lbl">Problema identificado</div>
+    <div class="panel-text" id="p-problema"></div>
+    <div class="panel-lbl">Hipótesis de mejora</div>
+    <div class="panel-text" id="p-hipotesis"></div>
+    <div id="p-mobile-note" class="panel-mobile-only" style="display:none">
+      <strong>Por qué es más crítico en mobile</strong>
+      <span id="p-mobile-note-text"></span>
+    </div>
+    <div class="panel-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-footer">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="lab-header">
+  <div class="lab-eyebrow">🔬 Laboratorio ResearchXL</div>
+  <h1>Análisis heurístico — Homepage Mobile</h1>
+  <p>Homepage ficticia (AERO · equipo outdoor) con 12 problemas heurísticos intencionales. Activa las anotaciones para explorarlos.</p>
+</div>
+
+<div class="legend-bar">
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#0369A1"></div><span style="display:flex;align-items:center;gap:4px;">📱 Mobile específico</span></div>
+</div>
+
+<!-- SCENE -->
+<div class="phone-scene">
+  <div class="issues-sidebar" id="issues-sidebar"><div class="sidebar-title">Issues detectados</div></div>
+
+  <div class="phone-wrapper">
+    <div class="phone-frame">
+      <div class="phone-inner">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="dynamic-island"></div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="phone-scroll" id="phone-scroll">
+
+          <!-- ISSUE #9: Nav sin búsqueda accesible -->
+          <div class="annotated ann-friccion" id="ann-target-9">
+            <div class="m-nav">
+              <button style="background:none;border:none;font-size:22px;cursor:pointer;">☰</button>
+              <div class="m-logo">AERO<sup>®</sup></div>
+              <div class="m-nav-icons">
+                <button class="m-icon-btn">🔍</button>
+                <button class="m-icon-btn">🛒<span class="m-cart-dot"></span></button>
+              </div>
+            </div>
+            <span class="ann-badge h-friccion" style="top:8px;right:4px;" onclick="openPanel(9)">9</span>
+          </div>
+
+          <!-- HERO: Issues #1 #2 #3 #4 nested -->
+          <div class="annotated ann-claridad" id="ann-target-1">
+            <div class="annotated ann-friccion" id="ann-target-2" style="outline:none!important;">
+              <div class="annotated ann-valor" id="ann-target-3" style="outline:none!important;">
+                <div class="annotated ann-distraccion" id="ann-target-4" style="outline:none!important;">
+                  <div class="m-hero">
+                    <div class="m-hero-bg">A</div>
+                    <div class="m-hero-eyebrow">Nueva temporada · Otoño 2026</div>
+                    <h1 class="m-hero-title">Equípate para la aventura</h1>
+                    <p class="m-hero-sub">Ropa y equipo técnico para quienes no se detienen.</p>
+                    <button class="m-hero-cta">Explorar</button>
+                    <div class="m-hero-dots">
+                      <div class="m-dot active"></div>
+                      <div class="m-dot"></div>
+                      <div class="m-dot"></div>
+                    </div>
+                  </div>
+                  <span class="ann-badge h-distraccion" style="bottom:50px;right:8px;top:auto;" onclick="openPanel(4)">4</span>
+                </div>
+              </div>
+              <span class="ann-badge h-valor" style="top:50%;right:30px;transform:translateY(-50%);" onclick="openPanel(3)">3</span>
+            </div>
+            <span class="ann-badge h-friccion" style="top:50%;right:8px;transform:translateY(-50%);" onclick="openPanel(2)">2</span>
+          </div>
+          <span class="ann-badge h-claridad" style="position:absolute;top:70px;left:8px;display:none;" onclick="openPanel(1)"></span>
+          <!-- badge #1 se posiciona en el hero-title -->
+
+          <!-- ISSUE #5: Announcement bar abajo del hero (posición sub-óptima en mobile) + value props sin descripción -->
+          <div class="annotated ann-claridad" id="ann-target-5">
+            <div class="m-announcement">Envío gratis en pedidos sobre <span>$180.000</span></div>
+            <div class="m-vp-bar">
+              <div class="m-vp-item"><div class="m-vp-icon">🚚</div><div class="m-vp-label">Envío gratis</div></div>
+              <div class="m-vp-item"><div class="m-vp-icon">↩️</div><div class="m-vp-label">Devoluciones</div></div>
+              <div class="m-vp-item"><div class="m-vp-icon">🔒</div><div class="m-vp-label">Pago seguro</div></div>
+              <div class="m-vp-item"><div class="m-vp-icon">⭐</div><div class="m-vp-label">Garantía</div></div>
+            </div>
+            <span class="ann-badge h-claridad" style="top:-8px;right:4px;" onclick="openPanel(5)">5</span>
+          </div>
+
+          <!-- Categories -->
+          <div class="m-section">
+            <div class="m-section-header">
+              <div><div class="m-section-label">Explora</div><div class="m-section-title">Categorías</div></div>
+              <a href="#" class="m-see-all">Ver todo →</a>
+            </div>
+            <div class="m-cat-scroll">
+              <div class="m-cat-card"><div class="m-cat-img" style="--c1:#1a3a26;--c2:#0d2418;"></div><div class="m-cat-name">Chaquetas</div></div>
+              <div class="m-cat-card"><div class="m-cat-img" style="--c1:#1a2a3a;--c2:#0d1824;"></div><div class="m-cat-name">Calzado Trail</div></div>
+              <div class="m-cat-card"><div class="m-cat-img" style="--c1:#3a2a1a;--c2:#241808;"></div><div class="m-cat-name">Mochilas</div></div>
+              <div class="m-cat-card"><div class="m-cat-img" style="--c1:#2a1a3a;--c2:#180d24;"></div><div class="m-cat-name">Camping</div></div>
+            </div>
+          </div>
+
+          <!-- ISSUE #6: Bestsellers sin scroll indicator ni badges -->
+          <div class="m-section" style="background:#f4f3f0;padding:24px 0;">
+            <div class="m-section-header">
+              <div><div class="m-section-label">Los más comprados</div><div class="m-section-title">Bestsellers</div></div>
+              <a href="#" class="m-see-all">Ver todos →</a>
+            </div>
+            <div class="annotated ann-valor" id="ann-target-6">
+              <div class="m-products-scroll">
+                <div class="m-p-card"><div class="m-p-img" style="background:#e8ede9;"><svg viewBox="0 0 120 120" fill="none"><rect x="20" y="30" width="80" height="60" rx="8" fill="#2d5a3d" opacity="0.5"/><rect x="35" y="20" width="50" height="15" rx="4" fill="#1a3a26" opacity="0.5"/></svg></div><div class="m-p-body"><div class="m-p-name">WindShell Pro</div><div class="m-p-rating">★★★★★</div><div class="m-p-price">$289.000</div></div></div>
+                <div class="m-p-card"><div class="m-p-img" style="background:#e8eced;"><svg viewBox="0 0 120 120" fill="none"><ellipse cx="60" cy="75" rx="40" ry="18" fill="#1a2a3a" opacity="0.4"/><path d="M30 75 C30 45 90 45 90 75" fill="#1a2a3a" opacity="0.5"/></svg></div><div class="m-p-body"><div class="m-p-name">Trail Runner X8</div><div class="m-p-rating">★★★★☆</div><div class="m-p-price"><span class="old">$219.000</span>$175.000</div></div></div>
+                <div class="m-p-card"><div class="m-p-img" style="background:#edeae8;"><svg viewBox="0 0 120 120" fill="none"><path d="M40 90 L35 40 L60 30 L85 40 L80 90Z" fill="#3a2a1a" opacity="0.45"/></svg></div><div class="m-p-body"><div class="m-p-name">Summit 35L</div><div class="m-p-rating">★★★★★</div><div class="m-p-price">$349.000</div></div></div>
+                <div class="m-p-card"><div class="m-p-img" style="background:#eae8ed;"><svg viewBox="0 0 120 120" fill="none"><rect x="25" y="50" width="70" height="40" rx="6" fill="#2a1a3a" opacity="0.45"/></svg></div><div class="m-p-body"><div class="m-p-name">ThermoLayer</div><div class="m-p-rating">★★★★☆</div><div class="m-p-price">$159.000</div></div></div>
+              </div>
+              <span class="ann-badge h-valor" style="top:-8px;right:4px;" onclick="openPanel(6)">6</span>
+            </div>
+          </div>
+
+          <!-- ISSUE #7: Social proof fuera del fold -->
+          <div class="annotated ann-valor" id="ann-target-7">
+            <div class="m-proof">
+              <div class="m-proof-number">4.8<span>/5</span></div>
+              <div class="m-proof-sub">+18.400 reseñas verificadas</div>
+              <div class="m-review"><div class="m-review-stars">★★★★★</div><div class="m-review-text">"Chaqueta increíble. 3 días de lluvia en el Cocuy sin filtraciones."</div><div class="m-review-author">— Sebastián M.</div></div>
+              <div class="m-review"><div class="m-review-stars">★★★★★</div><div class="m-review-text">"Las trail son las mejores que he tenido. Grip excepcional en barro."</div><div class="m-review-author">— Laura G.</div></div>
+            </div>
+            <span class="ann-badge h-valor" style="top:-8px;right:4px;" onclick="openPanel(7)">7</span>
+          </div>
+
+          <!-- ISSUE #8: Newsletter sin incentivo + ISSUE #10: input en mobile -->
+          <div class="annotated ann-friccion" id="ann-target-8">
+            <div class="m-newsletter">
+              <div class="m-nl-eyebrow">Newsletter</div>
+              <h2 class="m-nl-title">Únete a la comunidad AERO</h2>
+              <p class="m-nl-sub">Recibe novedades e inspiración directo a tu correo.</p>
+              <div class="m-nl-form">
+                <!-- ISSUE #10: Input de email en mobile — cuando el teclado sube, el botón queda oculto -->
+                <div class="annotated ann-friccion" id="ann-target-10">
+                  <input class="m-nl-input" type="email" placeholder="tu@correo.com">
+                  <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(10)">10</span>
+                </div>
+                <button class="m-nl-btn">Suscribirse</button>
+              </div>
+              <div class="m-nl-disc">Sin spam. Cancela cuando quieras.</div>
+            </div>
+            <span class="ann-badge h-friccion" style="top:-8px;right:4px;" onclick="openPanel(8)">8</span>
+          </div>
+
+          <!-- ISSUE #11: Footer completamente expandido sin acordeón -->
+          <div class="annotated ann-friccion" id="ann-target-11">
+            <div class="m-footer">
+              <div class="m-footer-logo">AERO</div>
+              <div class="m-footer-desc">Equipo técnico para exploración y montaña.</div>
+              <div class="m-footer-col"><h4>Tienda</h4><ul><li><a href="#">Montaña</a></li><li><a href="#">Trail</a></li><li><a href="#">Camping</a></li><li><a href="#">Accesorios</a></li><li><a href="#">Outlet</a></li></ul></div>
+              <div class="m-footer-col"><h4>Soporte</h4><ul><li><a href="#">Mi cuenta</a></li><li><a href="#">Rastrear pedido</a></li><li><a href="#">Devoluciones</a></li><li><a href="#">Guía de tallas</a></li><li><a href="#">FAQ</a></li></ul></div>
+              <div class="m-footer-col"><h4>Empresa</h4><ul><li><a href="#">Sobre AERO</a></li><li><a href="#">Blog</a></li><li><a href="#">Trabajo</a></li></ul></div>
+              <div class="m-footer-col"><h4>Legal</h4><ul><li><a href="#">Términos</a></li><li><a href="#">Privacidad</a></li><li><a href="#">Cookies</a></li></ul></div>
+              <div class="m-footer-bottom">© 2026 AERO · Colombia · COP</div>
+            </div>
+            <span class="ann-badge h-friccion" style="top:-8px;right:4px;" onclick="openPanel(11)">11</span>
+          </div>
+
+          <div style="height:10px;"></div>
+
+        </div><!-- /phone-scroll -->
+
+        <!-- ISSUE #12 ghost: sin sticky bottom CTA -->
+        <div class="m-sticky-cta-ghost">⚠ Aquí debería haber un sticky CTA de compra — ausente al scrollear</div>
+
+        <!-- ISSUE #10 ghost: chat ausente -->
+        <div class="m-chat-ghost" onclick="openPanel(10)">💬</div>
+
+        <!-- Bottom nav -->
+        <div class="m-bottom-nav">
+          <div class="m-tab active"><div class="m-tab-icon">🏠</div>Inicio</div>
+          <div class="m-tab"><div class="m-tab-icon">🔍</div>Buscar</div>
+          <div class="m-tab"><div class="m-tab-icon">❤️</div>Guardados</div>
+          <div class="m-tab"><div class="m-tab-icon">🛒</div>Carrito</div>
+          <div class="m-tab"><div class="m-tab-icon">👤</div>Cuenta</div>
+        </div>
+
+        <!-- ISSUE #12 annotation target -->
+        <div class="annotated ann-friccion" id="ann-target-12" style="position:absolute;bottom:44px;left:50%;transform:translateX(-50%);width:1px;height:1px;overflow:visible;">
+          <span class="ann-badge h-friccion" style="top:0;left:-12px;" onclick="openPanel(12)">12</span>
+        </div>
+
+      </div><!-- /phone-inner -->
+    </div><!-- /phone-frame -->
+  </div><!-- /phone-wrapper -->
+</div><!-- /phone-scene -->
+
+<!-- TOOLBAR -->
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO — HOMEPAGE MOBILE</span>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()"><div class="t-dot"></div> Ver anotaciones</button>
+</div>
+
+<script>
+const annotations = {
+  1:{heuristic:"Claridad",color:"#D97706",mobileSpecific:false,section:"Headline genérico sin propuesta de valor diferencial",problema:"'Equípate para la aventura' podría ser el claim de cualquier marca outdoor del mundo. No comunica qué diferencia a AERO: no menciona tecnología, durabilidad específica, origen, precio-valor, ni contexto de uso. Un usuario que llega por primera vez no puede saber en 3 segundos por qué comprar aquí y no en otro lado.",hipotesis:"Reemplazar por un headline que ancle la propuesta diferencial al contexto del usuario: '3 capas. 0°C. 890 gramos.' o 'Equipo técnico de montaña sin concesiones.' El headline debe trabajar junto con el subtítulo para comunicar propuesta de valor, no aspiración genérica.",mobileNote:"En mobile el viewport es más pequeño y el tiempo de atención más corto. Un headline genérico tiene menos tolerancia porque hay menos espacio para otros elementos de diferenciación alrededor del texto.",severidad:3},
+  2:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:true,section:"CTA del hero pequeño y vago — 'Explorar' sin contexto",problema:"'Explorar' no dice a dónde lleva. Además, el área de tap del botón, aunque visualmente aceptable, no está optimizada para la zona del thumb: el botón está en la mitad superior del hero, lejos del área natural de alcance del pulgar en pantallas de 390px.",hipotesis:"Cambiar el copy a algo específico: 'Ver colección Otoño' o 'Explorar chaquetas'. Aumentar el padding del botón para un área de tap mínima de 48×48px. Evaluar mover el CTA a la parte inferior del hero para mayor accesibilidad del thumb.",mobileNote:"En desktop el cursor es preciso y el CTA 'Explorar' no genera fricción de alcance. En mobile, el botón en la parte superior de la pantalla requiere que el usuario estire el dedo o cambie el agarre del teléfono — esto aumenta la fricción física de la acción más importante de la página.",severidad:2},
+  3:{heuristic:"Propuesta de Valor",color:"#059669",mobileSpecific:false,section:"Hero sin urgencia ni oferta temporal visible",problema:"El hero no contiene ningún elemento de urgencia ni incentivo de conversión: sin countdown de oferta, sin badge de temporada, sin descuento visible, sin mensaje de bienvenida con beneficio. Un usuario en primera visita sin urgencia contextual tiene menos probabilidad de comprar en esa sesión.",hipotesis:"Para usuarios nuevos: oferta de bienvenida en el hero ('10% en tu primer pedido · BIENVENIDO'). Para campañas activas: badge o countdown de urgencia real. Para temporada: badge 'Nueva colección · Otoño 2026' en el eyebrow. La urgencia genuina y contextual puede incrementar la conversión del hero entre 10–20%.",mobileNote:"En mobile la atención es más fugaz y las sesiones más cortas. La ausencia de urgencia es más costosa porque el usuario puede cerrar la app en cualquier momento sin barreras — un incentivo visible en el primer scroll puede ser la diferencia entre una sesión y una conversión.",severidad:2},
+  4:{heuristic:"Distracción",color:"#7C3AED",mobileSpecific:true,section:"Carousel con autoplay implícito sin controles ni pausa",problema:"Los tres dots debajo del hero sugieren un carousel. Si tiene autoplay activado, el contenido cambia mientras el usuario está leyendo el headline o procesando la propuesta de valor. En mobile, el autoplay puede generar confusion al interactuar con el scroll vertical.",hipotesis:"Opción A: Eliminar el carousel y usar imagen estática de alto impacto. La evidencia muestra que los slides 2+ tienen < 1% de interacción. Opción B: Desactivar autoplay, agregar flechas de navegación con área de tap ≥ 44px y botón de pausa explícito.",mobileNote:"En mobile el autoplay puede confundirse con un swipe gesture y generar desorientación. Además, en conexiones lentas el contenido del carousel puede no cargar a tiempo, dejando un hero incompleto durante el momento de mayor atención del usuario.",severidad:2},
+  5:{heuristic:"Claridad",color:"#D97706",mobileSpecific:true,section:"Value props en scroll horizontal sin descripción — íconos genéricos",problema:"Las value props son íconos + label de 2 palabras en un scroll horizontal que el usuario no sabe que puede deslizar. 'Envío gratis', 'Devoluciones', 'Pago seguro', 'Garantía' son genéricas. Además, la announcement bar con la condición de envío ('sobre $180.000') está debajo del hero en lugar de en el primer elemento visible.",hipotesis:"(1) Mover la announcement bar al primer elemento visible, encima del hero. (2) Cambiar las value props a items específicos y verificables con el 'por qué' incluido: '🚀 Despacho en 24h desde Bogotá'. (3) Agregar indicador de scroll en la barra de props (3 de 4) o transformarlas en 2 columnas visibles sin scroll.",mobileNote:"En mobile las props en scroll horizontal tienen muy baja tasa de interacción — los usuarios raramente deslizan voluntariamente una barra de beneficios. El contenido en el primer viewport es lo único que se garantiza que el usuario vea.",severidad:2},
+  6:{heuristic:"Propuesta de Valor",color:"#059669",mobileSpecific:true,section:"Bestsellers en scroll horizontal sin indicador de progreso ni badges",problema:"El scroll horizontal de productos no tiene ningún indicador de que hay más items: sin dots de progreso, sin contador ('2 de 4'), sin sombra de fade al borde derecho. El usuario puede no saber que hay más productos. Además, ninguna tarjeta tiene badge de 'Más vendido', 'Nuevo' o descuento.",hipotesis:"(1) Agregar fade-out en el borde derecho del scroll para señalizar continuación (peek de la siguiente tarjeta). (2) Dots o contador de posición debajo del scroll. (3) Badge '#1 más vendido' en la primera tarjeta. (4) Precio original tachado + badge '−20%' en tarjeta con descuento activo.",mobileNote:"En desktop la grilla muestra todos los productos simultáneamente y el scroll horizontal no existe. En mobile, si el scroll horizontal no señaliza que hay más contenido, el usuario que ve solo 2 tarjetas cree que eso es todo el catálogo de bestsellers.",severidad:2},
+  7:{heuristic:"Propuesta de Valor",color:"#059669",mobileSpecific:true,section:"Social proof fuera del fold — invisible en la primera pantalla",problema:"El rating 4.8/5 y las reseñas están en la sección 5 de la página, después de nav + hero + value props + categorías + bestsellers. En mobile esto representa un scroll de ~1800px desde el top. La gran mayoría de usuarios que rebotan nunca verán estos elementos críticos para la decisión de compra.",hipotesis:"(1) Agregar el rating agregado ('⭐ 4.8 · 18K+ reseñas') como un elemento visible en el hero o directamente debajo del CTA. (2) En la barra de value props, reemplazar 'Calidad garantizada' por '⭐ 4.8/5 · 18K+ compradores'. La prueba social debe estar en el primer viewport, no relegada al final.",mobileNote:"En desktop el social proof relegado al fondo es costoso pero el usuario desktop suele scrollear más. En mobile, la tasa de abandono antes de la mitad de la página supera el 60% en muchos sitios ecommerce — si el social proof está en la mitad inferior, la mayoría de usuarios nunca lo verán.",severidad:3},
+  8:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:false,section:"Newsletter sin incentivo concreto",problema:"'Únete a la comunidad AERO' + 'Recibe novedades' no ofrecen nada de valor al usuario a cambio de su email. No hay descuento de bienvenida, no hay contenido exclusivo prometido, no hay acceso early a drops, no hay guía descargable. El usuario no tiene ningún motivo concreto para suscribirse.",hipotesis:"Ofrecer un incentivo concreto y específico: '10% en tu primera compra al suscribirte' o 'Acceso anticipado a drops + guía de equipo técnico para montaña PDF'. El incentivo debe estar en el headline, no como letra pequeña. Con incentivo claro, la conversión de formularios newsletter puede multiplicarse por 3–5x.",mobileNote:"En mobile la suscripción al newsletter requiere que el usuario abra el teclado, lo que interrumpe la sesión de browsing. La fricción física hace que el incentivo deba ser más claro y convincente que en desktop para motivar la acción.",severidad:2},
+  9:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:true,section:"Nav hamburguesa sin acceso rápido a búsqueda y categorías",problema:"El ícono de búsqueda está a la derecha del nav como botón secundario sin campo visible. El menú hamburguesa oculta todas las categorías. Para un usuario que llega a la homepage con una necesidad específica ('quiero unas trail para montaña'), el acceso al catálogo es completamente indirecto.",hipotesis:"(1) En el nav móvil, dar el mismo peso visual al ícono de búsqueda que al carrito — la búsqueda es la acción más frecuente en mobile ecommerce. (2) Considerar una barra de búsqueda visible siempre (no solo como ícono) o que aparezca prominente al abrir el menú. (3) El menú hamburguesa debe mostrar las 4–5 categorías principales sin necesidad de expandir.",mobileNote:"En desktop la nav tiene espacio para links visibles y un campo de búsqueda. En mobile, detrás del hamburguesa queda el 90% de la arquitectura del sitio. Si el usuario no encuentra su categoría en el primer scroll del homepage, la búsqueda es la única alternativa — y si esa también es difícil de acceder, el usuario rebota.",severidad:2},
+  10:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:true,section:"Input de email en newsletter — teclado sube y tapa el botón CTA",problema:"Cuando el usuario toca el campo de email en el formulario de newsletter, el teclado virtual sube y ocupa ~40% de la pantalla. En la mayoría de dispositivos Android y algunos iPhone, esto hace que el botón 'Suscribirse' quede completamente oculto debajo del teclado, sin que el usuario sepa que debe hacer scroll para encontrarlo.",hipotesis:"(1) Posicionar el botón de envío encima del campo de email o asegurar que el layout scroll-to-button automáticamente al activar el input. (2) Usar 'inputmode=email' para activar el teclado de email directamente. (3) En formularios de una sola línea, considerar input + botón en línea horizontal cuando hay espacio suficiente.",mobileNote:"Este es un patrón de fricción exclusivamente mobile: en desktop el teclado no existe y el botón es siempre visible. En mobile, el 30–50% de los abandonos de formularios ocurren por el teclado tapando elementos críticos de la UI sin que el usuario lo note.",severidad:2},
+  11:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:true,section:"Footer completamente expandido sin acordeón",problema:"El footer tiene 4 columnas de links completamente expandidas, generando un bloque de ~800px de contenido al final de una página ya larga. En mobile, el 95% de los usuarios nunca necesita ver todos los links de footer — la mayoría solo necesita 'Rastrear pedido' o 'Devoluciones'. El footer expandido añade scroll innecesario.",hipotesis:"Convertir las secciones del footer a acordeón con 'Tienda ＋' / 'Soporte ＋' colapsables. Las acciones de alta frecuencia ('Rastrear pedido', 'Iniciar devolución') pueden ir fuera del acordeón como botones/links siempre visibles. Esto reduce el footer de ~800px a ~200px sin perder funcionalidad.",mobileNote:"En desktop el footer en columnas horizontales es compacto y escaneable. En mobile, las mismas 4 columnas apiladas verticalmente crean un muro de texto que el usuario scrollea sin leer. El acordeón es el patrón estándar para footers mobile.",severidad:2},
+  12:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:true,section:"Sin sticky CTA al scrollear — pérdida del camino a conversión",problema:"Cuando el usuario scrollea hacia abajo en el homepage, la nave y su acceso al carrito desaparecen. No hay ningún elemento persistente que mantenga el camino a compra visible durante el scroll. Un usuario que llega al final de la página y quiere ir al carrito tiene que hacer un scroll completo hacia arriba.",hipotesis:"Implementar una barra sticky minimalista que aparezca al scrollear 200px hacia abajo: logo + oferta activa + 'Comprar ahora' → PLP. Debe ser delgada (≤ 48px) para no consumir viewport. En mobile, el thumb llega más fácilmente a la barra inferior — usar esa posición para el CTA sticky.",mobileNote:"En desktop el header es sticky y el acceso al nav/carrito siempre está disponible. En mobile, una vez que el header desaparece del scroll, el usuario pierde el acceso principal a la tienda. La barra sticky inferior es el patrón mobile más efectivo para mantener el path to purchase visible.",severidad:2}
+};
+
+let annotationsActive = false;
+let currentAnn = 1;
+
+function toggleAnnotations() {
+  annotationsActive = !annotationsActive;
+  document.body.classList.toggle('annotations-on', annotationsActive);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', annotationsActive);
+  btn.innerHTML = `<div class="t-dot"></div> ${annotationsActive ? 'Ocultar anotaciones' : 'Ver anotaciones'}`;
+  const sidebar = document.getElementById('issues-sidebar');
+  sidebar.classList.toggle('visible', annotationsActive);
+  if(annotationsActive && sidebar.children.length < 2) buildSidebar();
+  // fix badge #1
+  const b1 = document.getElementById('ann-target-1');
+  if(b1) { const badgeEl = b1.querySelector('.ann-badge'); if(badgeEl) badgeEl.style.display = annotationsActive ? 'flex' : 'none'; }
+}
+
+function buildSidebar() {
+  const sidebar = document.getElementById('issues-sidebar');
+  Object.entries(annotations).forEach(([num, d]) => {
+    const el = document.createElement('div');
+    el.className = 'issue-chip' + (d.mobileSpecific ? ' mobile-specific' : '');
+    el.onclick = () => openPanel(Number(num));
+    el.innerHTML = `<div class="chip-num" style="background:${d.color}">${num}</div><div><div class="chip-heuristic">${d.heuristic}</div><div class="chip-section">${d.section}</div>${d.mobileSpecific ? '<div class="chip-mobile-label">📱 Mobile específico</div>' : ''}</div>`;
+    sidebar.appendChild(el);
+  });
+}
+
+function openPanel(num) {
+  currentAnn = num;
+  const d = annotations[num];
+  document.getElementById('p-num').textContent = '#' + num;
+  const chip = document.getElementById('p-chip');
+  chip.textContent = d.heuristic; chip.style.background = d.color;
+  document.getElementById('p-mobile-badge').style.display = d.mobileSpecific ? 'inline-flex' : 'none';
+  document.getElementById('p-section').textContent = d.section;
+  document.getElementById('p-problema').textContent = d.problema;
+  document.getElementById('p-hipotesis').textContent = d.hipotesis;
+  const mn = document.getElementById('p-mobile-note');
+  if(d.mobileNote) { mn.style.display = 'block'; document.getElementById('p-mobile-note-text').textContent = d.mobileNote; } else { mn.style.display = 'none'; }
+  const sevDiv = document.getElementById('p-sev'); sevDiv.innerHTML = '';
+  for(let i=1;i<=3;i++){const pip=document.createElement('div');pip.className='sev-pip';pip.style.background=i<=d.severidad?d.color:'#eee';sevDiv.appendChild(pip);}
+  sevDiv.insertAdjacentHTML('beforeend',`<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`);
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+
+function nav(dir) {
+  const keys = Object.keys(annotations).map(Number);
+  let idx = keys.indexOf(currentAnn) + dir;
+  if(idx < 0) idx = keys.length-1; if(idx >= keys.length) idx = 0;
+  openPanel(keys[idx]);
+}
+</script>
+</body>
+</html>
