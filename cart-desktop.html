@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico — Bolsa Desktop</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#f8f7f5;color:#1a1a1a;}
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated{position:relative;}
+.ann-badge{display:none;position:absolute;z-index:500;width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:800;color:#fff;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.95);transition:transform 0.15s;top:-10px;right:-10px;}
+.ann-badge:hover{transform:scale(1.2);}
+.ann-badge.active-badge{transform:scale(1.3);box-shadow:0 0 0 4px rgba(255,255,255,0.4);}
+.annotations-on .ann-badge{display:flex;}
+.annotations-on .annotated{outline:2px dashed;outline-offset:2px;}
+.h-friccion{background:#DC2626;} .h-distraccion{background:#7C3AED;} .h-claridad{background:#D97706;} .h-valor{background:#059669;}
+.ann-friccion{outline-color:rgba(220,38,38,0.25)!important;} .ann-distraccion{outline-color:rgba(124,58,237,0.25)!important;} .ann-claridad{outline-color:rgba(217,119,6,0.25)!important;} .ann-valor{outline-color:rgba(5,150,105,0.25)!important;}
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel{position:fixed;top:0;right:-420px;width:400px;height:100vh;background:#fff;border-left:1px solid #e5e5e5;z-index:1000;transition:right 0.3s ease;overflow-y:auto;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,0.1);}
+#ann-panel.open{right:0;}
+#panel-header{padding:20px 20px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;}
+#panel-header h3{font-size:11px;font-weight:700;color:#bbb;letter-spacing:0.1em;text-transform:uppercase;}
+#close-panel{cursor:pointer;width:32px;height:32px;border-radius:50%;background:#f4f4f4;border:none;display:flex;align-items:center;justify-content:center;font-size:18px;color:#555;}
+#close-panel:hover{background:#ebebeb;}
+#panel-body{padding:22px 20px;flex:1;}
+.panel-num{font-size:48px;font-weight:200;color:#e8e8e8;line-height:1;}
+.panel-heuristic-chip{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;margin-bottom:14px;}
+.panel-section-title{font-size:19px;font-weight:600;color:#111;margin-bottom:18px;line-height:1.3;}
+.panel-lbl{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#bbb;margin-bottom:6px;margin-top:18px;}
+.panel-text{font-size:14px;line-height:1.7;color:#444;}
+.sev-row{display:flex;align-items:center;gap:4px;margin-top:6px;}
+.sev-pip{width:28px;height:7px;border-radius:4px;}
+#panel-footer{display:flex;gap:8px;padding:16px 20px;border-top:1px solid #f0f0f0;position:sticky;bottom:0;background:#fff;}
+#panel-footer button{flex:1;padding:9px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;font-size:13px;cursor:pointer;color:#555;font-family:'DM Sans',sans-serif;}
+#panel-footer button:hover{background:#f8f8f8;}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:900;}
+#overlay.show{display:block;}
+
+/* ─── TOOLBAR ────────────────────────────────────────────────── */
+#lab-toolbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border-radius:40px;padding:10px 22px;display:flex;align-items:center;gap:14px;z-index:800;box-shadow:0 8px 32px rgba(0,0,0,0.28);white-space:nowrap;}
+.tb-label{font-size:12px;color:#888;font-weight:600;letter-spacing:0.05em;}
+.tb-sep{width:1px;height:20px;background:#333;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#bbb;}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+#toggle-btn{display:flex;align-items:center;gap:8px;background:#2d2d2d;border:1px solid #444;border-radius:24px;padding:7px 16px;cursor:pointer;color:#fff;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+#toggle-btn:hover{background:#3a3a3a;}
+#toggle-btn.on{background:#5B21B6;border-color:#7C3AED;}
+.t-dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background 0.2s;}
+#toggle-btn.on .t-dot{background:#c4b5fd;}
+
+/* ─── SITE CHROME ───────────────────────────────────────────── */
+nav{background:#fff;border-bottom:1px solid #eee;padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'DM Serif Display',serif;font-size:22px;}
+.nav-icons{display:flex;gap:16px;align-items:center;}
+.nav-icon-btn{background:none;border:none;cursor:pointer;font-size:13px;color:#555;font-family:'DM Sans',sans-serif;}
+.cart-badge{background:#1a1a1a;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:2px;}
+
+/* ISSUE #2: Sin indicador de progreso del checkout */
+.progress-ghost{display:none;background:rgba(217,119,6,0.06);border-bottom:2px dashed #D97706;padding:10px 80px;font-size:11px;color:#D97706;font-weight:700;letter-spacing:0.04em;text-align:center;}
+.annotations-on .progress-ghost{display:block;}
+
+.page-wrapper{max-width:1200px;margin:0 auto;padding:40px 48px 120px;}
+.page-title{font-size:28px;font-weight:700;margin-bottom:8px;}
+.page-sub{font-size:14px;color:#aaa;margin-bottom:32px;}
+
+/* TWO COLUMN */
+.cart-layout{display:grid;grid-template-columns:1fr 360px;gap:28px;align-items:start;}
+
+/* ─── CART ITEMS ────────────────────────────────────────────── */
+.cart-items-box{background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;}
+.cart-items-header{padding:16px 20px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;justify-content:space-between;}
+.cart-items-header span{font-size:13px;font-weight:600;color:#888;}
+.cart-items-header a{font-size:12px;color:#aaa;text-decoration:none;}
+
+.cart-item{padding:20px;border-bottom:1px solid #f5f5f5;display:flex;gap:16px;align-items:flex-start;}
+.cart-item:last-child{border-bottom:none;}
+
+/* ISSUE #1: Sin imagen del producto en el ítem */
+.item-img-ghost{display:none;width:88px;height:88px;border-radius:8px;background:rgba(217,119,6,0.06);border:2px dashed #D97706;flex-shrink:0;align-items:center;justify-content:center;font-size:9px;color:#D97706;font-weight:700;text-align:center;line-height:1.3;}
+.annotations-on .item-img-ghost{display:flex;}
+.item-img{width:88px;height:88px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.item-img svg{width:60px;opacity:0.3;}
+
+.item-details{flex:1;}
+.item-brand{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#bbb;margin-bottom:3px;}
+.item-name{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:5px;}
+.item-attrs{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.item-attr{font-size:12px;color:#888;background:#f5f5f5;padding:3px 8px;border-radius:4px;}
+
+/* ISSUE #4: Selector de cantidad sin edición directa */
+.item-qty-row{display:flex;align-items:center;gap:12px;}
+.qty-ctrl{display:flex;align-items:center;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;}
+.qty-btn{width:32px;height:32px;background:#f8f8f8;border:none;cursor:pointer;font-size:16px;color:#555;display:flex;align-items:center;justify-content:center;}
+.qty-btn:hover{background:#f0f0f0;}
+/* Sin campo de texto editable — issue #4 */
+.qty-num{width:36px;text-align:center;font-size:14px;font-weight:600;color:#1a1a1a;border:none;border-left:1px solid #e5e5e5;border-right:1px solid #e5e5e5;padding:7px 0;background:#fff;outline:none;}
+.item-actions{display:flex;gap:10px;align-items:center;margin-left:auto;}
+
+/* ISSUE #8: Botón guardar para después ausente */
+.save-ghost{display:none;font-size:11px;color:#059669;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:4px;background:rgba(5,150,105,0.06);border:1px dashed #059669;}
+.annotations-on .save-ghost{display:inline-flex;align-items:center;gap:4px;}
+.item-remove{font-size:12px;color:#bbb;cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;}
+.item-remove:hover{color:#DC2626;}
+
+.item-price-col{text-align:right;flex-shrink:0;}
+.item-price{font-size:16px;font-weight:700;color:#1a1a1a;}
+.item-price-unit{font-size:11px;color:#bbb;margin-top:2px;}
+
+/* ISSUE #7: Sin indicador de stock en ítem */
+.stock-ghost{display:none;font-size:11px;color:#D97706;font-weight:600;margin-top:4px;}
+.annotations-on .stock-ghost{display:block;}
+
+/* ISSUE #9: Campo de cupón muy prominente — ancla negatividad */
+.coupon-section{padding:16px 20px;border-top:1px solid #f5f5f5;}
+.coupon-label{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.coupon-row{display:flex;gap:8px;}
+.coupon-input{flex:1;padding:10px 14px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
+.coupon-input:focus{border-color:#999;}
+.coupon-btn{padding:10px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+/* ISSUE #10: Cross-sell irrelevante / ausente */
+.cross-sell-section{margin-top:20px;}
+.cross-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#bbb;margin-bottom:14px;}
+.cross-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.cross-card{background:#fff;border:1px solid #f0f0f0;border-radius:10px;overflow:hidden;cursor:pointer;}
+.cross-img{height:90px;display:flex;align-items:center;justify-content:center;}
+.cross-img svg{width:48px;opacity:0.25;}
+.cross-body{padding:10px;}
+.cross-name{font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cross-price{font-size:12px;font-weight:700;color:#1a1a1a;}
+.cross-add{font-size:11px;color:#555;background:#f5f5f5;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;margin-top:4px;width:100%;font-family:'DM Sans',sans-serif;}
+
+/* ─── ORDER SUMMARY ─────────────────────────────────────────── */
+.summary-box{background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;position:sticky;top:80px;}
+.summary-header{padding:16px 20px;border-bottom:1px solid #f5f5f5;}
+.summary-header h3{font-size:15px;font-weight:700;}
+
+/* ISSUE #11: Umbral de envío gratis ausente */
+.shipping-threshold-ghost{display:none;margin:16px 20px 0;background:rgba(5,150,105,0.06);border:1.5px dashed #059669;border-radius:8px;padding:10px 12px;font-size:11px;color:#059669;font-weight:700;text-align:center;}
+.annotations-on .shipping-threshold-ghost{display:block;}
+
+.summary-lines{padding:16px 20px;}
+.summary-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;}
+.summary-row.total{font-weight:700;font-size:16px;border-top:1px solid #f0f0f0;padding-top:12px;margin-top:4px;}
+.summary-label{color:#666;}
+.summary-value{color:#1a1a1a;font-weight:500;}
+
+/* ISSUE #5: Envío "Calculado al finalizar" — costo oculto */
+.shipping-pending{color:#D97706;font-size:12px;font-weight:600;}
+
+/* ISSUE #3: CTA checkout no suficientemente prominente para su importancia */
+.summary-cta-area{padding:0 20px 20px;}
+.checkout-btn{width:100%;padding:15px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;transition:background 0.2s;}
+.checkout-btn:hover{background:#333;}
+/* ISSUE #3: Sin refuerzo de seguridad junto al CTA principal */
+.continue-btn{width:100%;padding:12px;background:#fff;color:#555;border:1px solid #e5e5e5;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+/* ISSUE #6: Sin prueba social / garantía cerca del CTA */
+.trust-row{display:flex;justify-content:center;gap:16px;padding:12px 20px;border-top:1px solid #f5f5f5;flex-wrap:wrap;}
+.trust-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#bbb;}
+/* Sin reviews ni garantía visible — issue #6 ghost -->
+.trust-proof-ghost{display:none;padding:10px 20px;background:rgba(5,150,105,0.05);border-top:1.5px dashed #059669;font-size:10px;color:#059669;font-weight:700;text-align:center;}
+.annotations-on .trust-proof-ghost{display:block;}
+
+/* ISSUE #12: "Seguir comprando" borra contexto del checkout */
+.keep-shopping-note{font-size:11px;color:#bbb;text-align:center;padding:0 20px 16px;line-height:1.4;}
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="closePanel()"></div>
+<div id="ann-panel">
+  <div id="panel-header"><h3>Issue heurístico</h3><button id="close-panel" onclick="closePanel()">×</button></div>
+  <div id="panel-body">
+    <div class="panel-num" id="p-num">#1</div>
+    <div id="p-chip" class="panel-heuristic-chip"></div>
+    <div class="panel-section-title" id="p-section"></div>
+    <div class="panel-lbl">Problema identificado</div>
+    <div class="panel-text" id="p-problema"></div>
+    <div class="panel-lbl">Hipótesis de mejora</div>
+    <div class="panel-text" id="p-hipotesis"></div>
+    <div class="panel-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-footer">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO — BOLSA DESKTOP</span>
+  <div class="tb-sep"></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()"><div class="t-dot"></div> Ver anotaciones</button>
+</div>
+
+<nav>
+  <div class="nav-logo">STRYDE</div>
+  <div class="nav-icons">
+    <button class="nav-icon-btn">🔍</button>
+    <button class="nav-icon-btn">👤 Cuenta</button>
+    <button class="nav-icon-btn">🛒 Bolsa <span class="cart-badge">3</span></button>
+  </div>
+</nav>
+
+<!-- ISSUE #2: Sin indicador de progreso ghost -->
+<div class="annotated ann-claridad" id="ann-target-2">
+  <div class="progress-ghost">⚠ Aquí debería ir indicador de progreso: Bolsa → Envío → Pago → Confirmación — ausente</div>
+  <span class="ann-badge h-claridad" style="top:4px;right:4px;" onclick="openPanel(2)">2</span>
+</div>
+
+<div class="page-wrapper">
+  <div class="page-title">Mi bolsa</div>
+  <div class="page-sub">3 productos · Envío calculado al finalizar</div>
+
+  <div class="cart-layout">
+
+    <!-- ── LEFT: ITEMS ── -->
+    <div>
+      <div class="cart-items-box">
+        <div class="cart-items-header">
+          <span>Productos (3)</span>
+          <a href="#">Vaciar bolsa</a>
+        </div>
+
+        <!-- ITEM 1 — issue #1 (sin imagen ghost), #4 (qty sin edición), #7 (stock), #8 (guardar) -->
+        <div class="cart-item">
+          <!-- ISSUE #1: Sin imagen del producto -->
+          <div class="annotated ann-claridad" id="ann-target-1">
+            <div class="item-img" style="background:#f0efed;">
+              <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#777"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#999"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#555"/></svg>
+            </div>
+            <div class="item-img-ghost">Sin imagen</div>
+            <span class="ann-badge h-claridad" onclick="openPanel(1)">1</span>
+          </div>
+          <div class="item-details">
+            <div class="item-brand">STRYDE</div>
+            <div class="item-name">Running Pro V2</div>
+            <div class="item-attrs">
+              <span class="item-attr">Talla: 42</span>
+              <span class="item-attr">Color: Negro</span>
+            </div>
+            <!-- ISSUE #7: Sin indicador de stock bajo -->
+            <div class="stock-ghost">⚠ Stock bajo — solo quedan 2 pares en tu talla</div>
+            <div class="item-qty-row">
+              <!-- ISSUE #4: Qty no editable directamente -->
+              <div class="annotated ann-friccion" id="ann-target-4">
+                <div class="qty-ctrl">
+                  <button class="qty-btn">−</button>
+                  <input class="qty-num" type="text" value="1" readonly>
+                  <button class="qty-btn">+</button>
+                </div>
+                <span class="ann-badge h-friccion" onclick="openPanel(4)">4</span>
+              </div>
+              <!-- ISSUE #8: Sin guardar para después -->
+              <div class="annotated ann-valor" id="ann-target-8" style="outline:none!important;">
+                <span class="save-ghost">♡ Guardar</span>
+                <span class="ann-badge h-valor" style="top:-8px;right:-8px;" onclick="openPanel(8)">8</span>
+              </div>
+              <button class="item-remove">Eliminar</button>
+            </div>
+          </div>
+          <div class="item-price-col">
+            <div class="item-price">$189.000</div>
+            <div class="item-price-unit">× 1 und.</div>
+          </div>
+        </div>
+
+        <!-- ITEM 2 -->
+        <div class="cart-item">
+          <div class="item-img" style="background:#edeae8;">
+            <svg viewBox="0 0 160 100" fill="none"><path d="M40 90 L35 40 L60 30 L85 40 L80 90Z" fill="#3a2a1a" opacity="0.45"/><path d="M40 90 L60 95 L80 90" fill="#241808" opacity="0.5"/></svg>
+          </div>
+          <div class="item-details">
+            <div class="item-brand">STRYDE</div>
+            <div class="item-name">Mochila Trail 20L</div>
+            <div class="item-attrs">
+              <span class="item-attr">Color: Verde oliva</span>
+            </div>
+            <!-- ISSUE #7 annotation target -->
+            <div class="annotated ann-valor" id="ann-target-7">
+              <div class="stock-ghost">⚠ Última unidad disponible</div>
+              <div class="item-qty-row">
+                <div class="qty-ctrl">
+                  <button class="qty-btn">−</button>
+                  <input class="qty-num" type="text" value="1" readonly>
+                  <button class="qty-btn">+</button>
+                </div>
+                <span class="save-ghost">♡ Guardar</span>
+                <button class="item-remove">Eliminar</button>
+              </div>
+              <span class="ann-badge h-valor" style="top:-8px;right:50px;" onclick="openPanel(7)">7</span>
+            </div>
+          </div>
+          <div class="item-price-col">
+            <div class="item-price">$249.000</div>
+            <div class="item-price-unit">× 1 und.</div>
+          </div>
+        </div>
+
+        <!-- ITEM 3 -->
+        <div class="cart-item">
+          <div class="item-img" style="background:#eef2f0;">
+            <svg viewBox="0 0 120 120" fill="none"><rect x="20" y="30" width="80" height="60" rx="8" fill="#2d5a3d" opacity="0.4"/><rect x="35" y="20" width="50" height="15" rx="4" fill="#1a3a26" opacity="0.4"/></svg>
+          </div>
+          <div class="item-details">
+            <div class="item-brand">STRYDE</div>
+            <div class="item-name">Chaqueta WindProof</div>
+            <div class="item-attrs">
+              <span class="item-attr">Talla: M</span>
+              <span class="item-attr">Color: Negro</span>
+            </div>
+            <div class="item-qty-row">
+              <div class="qty-ctrl">
+                <button class="qty-btn">−</button>
+                <input class="qty-num" type="text" value="2" readonly>
+                <button class="qty-btn">+</button>
+              </div>
+              <span class="save-ghost">♡ Guardar</span>
+              <button class="item-remove">Eliminar</button>
+            </div>
+          </div>
+          <div class="item-price-col">
+            <div class="item-price">$338.000</div>
+            <div class="item-price-unit">× 2 · $169.000 c/u</div>
+          </div>
+        </div>
+
+        <!-- ISSUE #9: Campo de cupón prominente -->
+        <div class="annotated ann-distraccion" id="ann-target-9">
+          <div class="coupon-section">
+            <div class="coupon-label">🏷️ Código de descuento o gift card</div>
+            <div class="coupon-row">
+              <input class="coupon-input" type="text" placeholder="Ingresa tu código">
+              <button class="coupon-btn">Aplicar</button>
+            </div>
+          </div>
+          <span class="ann-badge h-distraccion" style="top:-10px;right:10px;" onclick="openPanel(9)">9</span>
+        </div>
+      </div>
+
+      <!-- ISSUE #10: Cross-sell irrelevante -->
+      <div class="annotated ann-valor" id="ann-target-10">
+        <div class="cross-sell-section">
+          <div class="cross-title">También podría interesarte</div>
+          <div class="cross-grid">
+            <!-- Productos sin relación directa con lo que está en la bolsa -->
+            <div class="cross-card">
+              <div class="cross-img" style="background:#f5f0ee;"><svg viewBox="0 0 120 120" fill="none"><rect x="30" y="40" width="60" height="50" rx="6" fill="#C2A882" opacity="0.4"/></svg></div>
+              <div class="cross-body"><div class="cross-name">Gorra Running</div><div class="cross-price">$49.000</div><button class="cross-add">+ Agregar</button></div>
+            </div>
+            <div class="cross-card">
+              <div class="cross-img" style="background:#f2eef5;"><svg viewBox="0 0 120 120" fill="none"><rect x="25" y="35" width="70" height="55" rx="8" fill="#7C3AED" opacity="0.25"/></svg></div>
+              <div class="cross-body"><div class="cross-name">Medias Trail (3 pares)</div><div class="cross-price">$35.000</div><button class="cross-add">+ Agregar</button></div>
+            </div>
+            <div class="cross-card">
+              <div class="cross-img" style="background:#eef5f0;"><svg viewBox="0 0 120 120" fill="none"><ellipse cx="60" cy="70" rx="35" ry="20" fill="#059669" opacity="0.25"/><rect x="40" y="30" width="40" height="45" rx="5" fill="#059669" opacity="0.3"/></svg></div>
+              <div class="cross-body"><div class="cross-name">Botella Hidratación 500ml</div><div class="cross-price">$29.000</div><button class="cross-add">+ Agregar</button></div>
+            </div>
+          </div>
+        </div>
+        <span class="ann-badge h-valor" style="top:-10px;right:4px;" onclick="openPanel(10)">10</span>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: SUMMARY ── -->
+    <div>
+      <div class="summary-box">
+        <div class="summary-header"><h3>Resumen del pedido</h3></div>
+
+        <!-- ISSUE #11: Umbral de envío gratis ghost -->
+        <div class="shipping-threshold-ghost">⚠ Aquí debería ir: "¡Te faltan $11.000 para envío gratis!" — ausente</div>
+
+        <div class="summary-lines">
+          <div class="summary-row"><span class="summary-label">Subtotal (3 ítems)</span><span class="summary-value">$776.000</span></div>
+          <!-- ISSUE #5: Envío pendiente de calcular -->
+          <div class="annotated ann-friccion" id="ann-target-5">
+            <div class="summary-row"><span class="summary-label">Envío</span><span class="shipping-pending">Calculado al finalizar ›</span></div>
+            <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(5)">5</span>
+          </div>
+          <div class="summary-row"><span class="summary-label">Descuentos</span><span class="summary-value" style="color:#059669;">−$0</span></div>
+          <div class="summary-row total"><span class="summary-label">Total estimado</span><span class="summary-value">$776.000</span></div>
+          <div style="font-size:11px;color:#bbb;margin-top:6px;">IVA incluido. Envío calculado en el siguiente paso.</div>
+        </div>
+
+        <div class="summary-cta-area">
+          <!-- ISSUE #3: CTA sin refuerzo de seguridad ni lock icon -->
+          <div class="annotated ann-friccion" id="ann-target-3">
+            <button class="checkout-btn">Finalizar compra</button>
+            <!-- Sin íconos de pago, sin "pago 100% seguro" junto al botón -->
+            <span class="ann-badge h-friccion" style="top:-10px;right:-10px;" onclick="openPanel(3)">3</span>
+          </div>
+
+          <!-- ISSUE #12: "Seguir comprando" lleva al homepage perdiendo contexto -->
+          <div class="annotated ann-friccion" id="ann-target-12">
+            <button class="continue-btn">← Seguir comprando</button>
+            <span class="ann-badge h-friccion" style="top:-10px;right:-10px;" onclick="openPanel(12)">12</span>
+          </div>
+        </div>
+
+        <!-- ISSUE #6: Sin prueba social ni garantía visible cerca del CTA -->
+        <div class="annotated ann-valor" id="ann-target-6">
+          <div class="trust-row">
+            <div class="trust-item">🔒 Pago seguro</div>
+            <div class="trust-item">↩️ Devolución 30 días</div>
+          </div>
+          <!-- Sin rating agregado, sin reviews, sin "12.000+ clientes satisfechos" -->
+          <div class="trust-proof-ghost">⚠ Aquí debería ir: "⭐ 4.8/5 · 12.000+ compras verificadas" — ausente</div>
+          <span class="ann-badge h-valor" style="top:-10px;right:10px;" onclick="openPanel(6)">6</span>
+        </div>
+
+        <!-- ISSUE #11 annotation target -->
+        <div class="annotated ann-valor" id="ann-target-11">
+          <div class="keep-shopping-note">¿Tienes un código de descuento? Aplícalo antes de finalizar.</div>
+          <span class="ann-badge h-valor" style="top:-10px;right:10px;" onclick="openPanel(11)">11</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const annotations = {
+  1:{heuristic:"Claridad",color:"#D97706",section:"Ítems de la bolsa sin imagen del producto",problema:"Los productos en la bolsa muestran solo nombre, talla y color como texto. No hay imagen visual del ítem. Para artículos de running donde el color y el diseño influyen en la identidad del producto, la ausencia de imagen obliga al usuario a recordar mentalmente qué está comprando — especialmente cuando tiene múltiples ítems o han pasado días desde que los agregó.",hipotesis:"Mostrar imagen en miniatura (80–100px) de cada producto en la bolsa, idéntica a la imagen principal del PDP. Para productos con variantes de color, mostrar la imagen de la variante seleccionada. La imagen en bolsa reduce las dudas de última hora y la tasa de abandono por incertidumbre sobre lo que se está comprando.",severidad:2},
+  2:{heuristic:"Claridad",color:"#D97706",section:"Sin indicador de progreso del flujo de checkout",problema:"El usuario llega a la bolsa sin saber cuántos pasos le faltan para completar la compra. ¿Hay una pantalla de datos personales? ¿Cuántos formularios? ¿Cuándo se confirma el pago? La incertidumbre sobre la longitud del proceso es una de las causas más frecuentes de abandono en el inicio del checkout.",hipotesis:"Agregar indicador de progreso horizontal: 'Bolsa → Envío → Pago → Confirmación'. Puede ser con círculos numerados o barra de pasos. Mostrar el paso actual resaltado. Este elemento reduce la ansiedad del proceso y puede incrementar la tasa de inicio de checkout entre 10–15%.",severidad:2},
+  3:{heuristic:"Fricción",color:"#DC2626",section:"CTA de checkout sin refuerzo de seguridad ni métodos de pago visibles",problema:"El botón 'Finalizar compra' está solo, sin ningún refuerzo de confianza en su entorno inmediato: sin ícono de candado, sin logos de medios de pago aceptados (Visa, Mastercard, PSE), sin mensaje de 'Pago 100% seguro'. Para usuarios comprando por primera vez, el CTA principal de checkout es el momento de mayor ansiedad — y también el más silencioso en esta bolsa.",hipotesis:"Junto al botón: (1) íconos de métodos de pago (Visa, Mastercard, PSE, Nequi). (2) Texto pequeño: '🔒 Pago 100% seguro y cifrado'. (3) Considerar mostrar el total de nuevo junto al CTA para que el usuario confirme el monto antes de avanzar. Estos elementos pueden reducir el abandono en el CTA final entre 5–15%.",severidad:2},
+  4:{heuristic:"Fricción",color:"#DC2626",section:"Selector de cantidad sin edición directa del número",problema:"El usuario solo puede cambiar la cantidad con botones + y −. Para comprar 5 unidades de medias desde una cantidad de 1, debe presionar 4 veces el botón +. No hay campo de texto editable. Para usuarios con intención de compra de volumen, este flujo es lento y frustrante.",hipotesis:"El campo de cantidad debe ser un input de texto directamente editable, con validación al salir del campo (blur) o al presionar Enter. Los botones +/− pueden coexistir como shortcuts. Límite máximo mostrado si aplica: input con max='5'. Pequeña mejora, alto impacto en flujos de compra múltiple.",severidad:1},
+  5:{heuristic:"Fricción",color:"#DC2626",section:"Costo de envío oculto hasta el checkout — 'Calculado al finalizar'",problema:"'Calculado al finalizar' es uno de los principales causantes de abandono de carrito a nivel global. El usuario no puede ver el total real de su compra hasta avanzar al siguiente paso. Esta incertidumbre genera desconfianza activa: el usuario sospecha que el envío será costoso y prefiere abandonar antes de descubrirlo.",hipotesis:"Opciones: (1) Mostrar costo estimado de envío basado en la ciudad del usuario (si está logueado o detectada por IP): '$8.900 · Bogotá'. (2) Si hay umbral de envío gratis, mostrar barra de progreso: 'Te faltan $11K para envío gratis'. (3) Si el envío siempre es gratis sobre cierto monto, declararlo explícitamente. La visibilidad del envío puede reducir el abandono en este punto entre 20–30%.",severidad:3},
+  6:{heuristic:"Propuesta de Valor",color:"#059669",section:"Sin prueba social ni garantía diferencial visible junto al CTA",problema:"La zona de confianza junto al botón solo muestra '🔒 Pago seguro' y '↩️ Devolución 30 días' — los mismos elementos que cualquier ecommerce. No hay rating agregado de STRYDE, no hay número de clientes satisfechos, no hay garantía específica de la marca. El usuario está a un clic de comprometerse con $776K sin ver ninguna señal de que otros lo han hecho con buen resultado.",hipotesis:"Agregar bajo los trust badges: '⭐ 4.8/5 · 12.400 compras verificadas este mes'. Si hay política de garantía superior: 'Garantía de satisfacción: si no te convence, lo cambiamos o devolvemos sin preguntas.' La prueba social en el momento de mayor intención de compra es el diferenciador entre completar y abandonar.",severidad:2},
+  7:{heuristic:"Propuesta de Valor",color:"#059669",section:"Sin indicador de stock en ítems de la bolsa",problema:"El ítem 'Mochila Trail 20L' tiene última unidad disponible y el usuario no lo sabe. Si el usuario abandona la bolsa para comparar precios y vuelve un día después, el producto puede ya no estar disponible. La ausencia de indicadores de stock elimina uno de los más poderosos catalizadores de urgencia disponibles en la bolsa.",hipotesis:"Mostrar alerta de stock junto al ítem cuando queden ≤ 3 unidades: '⚠ Solo quedan 2 en tu talla — no garantizamos disponibilidad'. Para última unidad: '🔴 Última unidad'. El indicador de stock en bolsa es una de las mejoras de mayor ROI para reducir el abandono de carrito.",severidad:2},
+  8:{heuristic:"Propuesta de Valor",color:"#059669",section:"Sin opción de guardar ítem para después / lista de deseos",problema:"Si el usuario no está listo para comprar todos los ítems ahora (precio, timing, duda), la única opción es eliminarlos de la bolsa. No hay 'Guardar para después', no hay 'Mover a lista de deseos'. Esto significa que el usuario que duda sobre un ítem o no tiene presupuesto completo debe perder el ítem permanentemente o dejarlo en la bolsa inflando el total.",hipotesis:"Agregar por cada ítem: '♡ Guardar para después' que mueve el producto a la lista de deseos del usuario. Esto permite al usuario progresar al checkout sin el ítem, sin perderlo. Para usuarios no logueados, crear wishlist en sesión y sugerir login para persistirla. La wishlist reduce la eliminación definitiva de ítems de alto valor.",severidad:1},
+  9:{heuristic:"Distracción",color:"#7C3AED",section:"Campo de cupón prominente — ancla negatividad en usuarios sin código",problema:"El campo de descuento tiene el mismo peso visual que el resumen del pedido. Para el 90%+ de los usuarios que no tienen un cupón, este campo comunica activamente que están pagando de más. Muchos usuarios abandonan la bolsa para buscar un código en Google — y frecuentemente no regresan, o regresan por un link de un afiliado que sí tiene código.",hipotesis:"Colapsar el campo de cupón detrás de un link discreto: '¿Tienes un código de descuento? Clic aquí' que expanda el campo al hacer clic. El campo debe ser accesible pero no prominente. Esta mejora puede reducir el abandono por búsqueda de cupones entre 10–20%. Los usuarios con códigos siempre lo buscarán — los sin código no deben ser distraídos.",severidad:2},
+  10:{heuristic:"Propuesta de Valor",color:"#059669",section:"Cross-sell sin relevancia contextual al contenido de la bolsa",problema:"La sección 'También podría interesarte' muestra productos genéricos (gorra, medias, botella) sin ninguna relación con los ítems específicos de la bolsa. No hay lógica de 'completar el outfit', 'otros compradores de Running Pro V2 también llevaron', ni complementos directos. La relevancia del cross-sell es lo que determina si convierte o es ruido.",hipotesis:"El cross-sell en bolsa debe ser hyper-contextual: (1) 'Compradores de Running Pro V2 también llevaron → Medias Running Pro (talla 42)'. (2) 'Completa tu kit → Plantillas para Running Pro V2'. (3) Si hay umbral de envío gratis cercano: mostrar productos de bajo precio que llevan al umbral: '¡Agrega este ítem por $11K y obtén envío gratis!'. La relevancia contextual puede multiplicar la tasa de conversión del cross-sell por 3–5x.",severidad:2},
+  11:{heuristic:"Propuesta de Valor",color:"#059669",section:"Sin barra de progreso hacia el umbral de envío gratis",problema:"STRYDE ofrece envío gratis en compras sobre $180.000. El usuario tiene $776.000 en la bolsa — ya lo superó. Pero si el usuario tuviera $165.000, estaría a $15K del envío gratis sin saberlo. No hay ninguna comunicación proactiva del umbral: ni barra de progreso, ni mensaje, ni sugerencia de productos para llegar.",hipotesis:"Mostrar siempre el estado del umbral de envío en el resumen: si ya aplica → '✅ ¡Tienes envío gratis!'; si falta poco → '🎯 Solo te faltan $15K para envío gratis — agrega un ítem'. Complementar con sugerencia de producto de precio bajo. Esta mecánica puede incrementar el ticket promedio entre 8–12% y reduce el abandono por costo de envío.",severidad:2},
+  12:{heuristic:"Fricción",color:"#DC2626",section:"'Seguir comprando' lleva al homepage, rompiendo el contexto de checkout",problema:"El botón 'Seguir comprando' lleva al usuario al homepage de STRYDE. Si el usuario quería agregar otro par de zapatillas de trail, tiene que navegar toda la categoría de nuevo. El contexto de checkout (intención de compra activa) se rompe y el usuario puede no regresar a la bolsa.",hipotesis:"'Seguir comprando' debe llevar al último PLP visitado o a la categoría del último ítem agregado, no al homepage. Si no hay historial de navegación disponible, llevar a la PLP de la categoría del ítem principal de la bolsa. Mejor aún: usar 'Agregar más productos → Running' con links a las categorías más relevantes según el contenido de la bolsa.",severidad:1}
+};
+
+let annotationsActive=false,currentAnn=1;
+function toggleAnnotations(){
+  annotationsActive=!annotationsActive;
+  document.body.classList.toggle('annotations-on',annotationsActive);
+  const btn=document.getElementById('toggle-btn');
+  btn.classList.toggle('on',annotationsActive);
+  btn.innerHTML=`<div class="t-dot"></div> ${annotationsActive?'Ocultar anotaciones':'Ver anotaciones'}`;
+}
+function openPanel(num){
+  currentAnn=num;const d=annotations[num];
+  document.getElementById('p-num').textContent='#'+num;
+  const chip=document.getElementById('p-chip');chip.textContent=d.heuristic;chip.style.background=d.color;
+  document.getElementById('p-section').textContent=d.section;
+  document.getElementById('p-problema').textContent=d.problema;
+  document.getElementById('p-hipotesis').textContent=d.hipotesis;
+  const sevDiv=document.getElementById('p-sev');sevDiv.innerHTML='';
+  for(let i=1;i<=3;i++){const pip=document.createElement('div');pip.className='sev-pip';pip.style.background=i<=d.severidad?d.color:'#eee';sevDiv.appendChild(pip);}
+  sevDiv.insertAdjacentHTML('beforeend',`<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`);
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePanel(){
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+function nav(dir){
+  const keys=Object.keys(annotations).map(Number);
+  let idx=keys.indexOf(currentAnn)+dir;
+  if(idx<0)idx=keys.length-1;if(idx>=keys.length)idx=0;
+  openPanel(keys[idx]);
+}
+document.querySelectorAll('.qty-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const input=btn.parentElement.querySelector('.qty-num');
+    let v=parseInt(input.value)||1;
+    v=btn.textContent==='+'?Math.min(v+1,10):Math.max(v-1,1);
+    input.value=v;
+  });
+});
+</script>
+</body>
+</html>
