@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico — Homepage Desktop</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: #f8f7f5; color: #1a1a1a; }
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated { position: relative; }
+.ann-badge {
+  display: none; position: absolute; z-index: 500;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-size: 12px; font-weight: 800; color: #fff;
+  align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  border: 2px solid rgba(255,255,255,0.95);
+  transition: transform 0.15s; top: -10px; right: -10px;
+}
+.ann-badge:hover { transform: scale(1.2); }
+.ann-badge.active-badge { transform: scale(1.3); box-shadow: 0 0 0 4px rgba(255,255,255,0.4); }
+.annotations-on .ann-badge { display: flex; }
+.annotations-on .annotated { outline: 2px dashed; outline-offset: 2px; }
+
+.h-friccion    { background: #DC2626; }
+.h-distraccion { background: #7C3AED; }
+.h-claridad    { background: #D97706; }
+.h-valor       { background: #059669; }
+
+.ann-friccion    { outline-color: rgba(220,38,38,0.25) !important; }
+.ann-distraccion { outline-color: rgba(124,58,237,0.25) !important; }
+.ann-claridad    { outline-color: rgba(217,119,6,0.25) !important; }
+.ann-valor       { outline-color: rgba(5,150,105,0.25) !important; }
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel {
+  position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+  background: #fff; border-left: 1px solid #e5e5e5;
+  z-index: 1000; transition: right 0.3s ease;
+  overflow-y: auto; display: flex; flex-direction: column;
+  box-shadow: -4px 0 32px rgba(0,0,0,0.1);
+}
+#ann-panel.open { right: 0; }
+#panel-header {
+  padding: 20px 20px 16px; border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 2;
+}
+#panel-header h3 { font-size: 11px; font-weight: 700; color: #bbb; letter-spacing: 0.1em; text-transform: uppercase; }
+#close-panel { cursor: pointer; width: 32px; height: 32px; border-radius: 50%; background: #f4f4f4; border: none; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #555; }
+#close-panel:hover { background: #ebebeb; }
+#panel-body { padding: 22px 20px; flex: 1; }
+.panel-num { font-size: 48px; font-weight: 200; color: #e8e8e8; line-height: 1; }
+.panel-heuristic-chip { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 14px; }
+.panel-section-title { font-size: 19px; font-weight: 600; color: #111; margin-bottom: 18px; line-height: 1.3; }
+.panel-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #bbb; margin-bottom: 6px; margin-top: 18px; }
+.panel-text { font-size: 14px; line-height: 1.7; color: #444; }
+.sev-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.sev-pip { width: 28px; height: 7px; border-radius: 4px; }
+#panel-footer { display: flex; gap: 8px; padding: 16px 20px; border-top: 1px solid #f0f0f0; position: sticky; bottom: 0; background: #fff; }
+#panel-footer button { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #e5e5e5; background: #fff; font-size: 13px; cursor: pointer; color: #555; font-family: 'DM Sans', sans-serif; }
+#panel-footer button:hover { background: #f8f8f8; }
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 900; }
+#overlay.show { display: block; }
+
+/* ─── TOOLBAR ────────────────────────────────────────────────── */
+#lab-toolbar {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #1a1a1a; border-radius: 40px; padding: 10px 22px;
+  display: flex; align-items: center; gap: 14px; z-index: 800;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.28); white-space: nowrap;
+}
+#lab-toolbar .tb-label { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.05em; }
+.tb-sep { width: 1px; height: 20px; background: #333; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #bbb; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+#toggle-btn { display: flex; align-items: center; gap: 8px; background: #2d2d2d; border: 1px solid #444; border-radius: 24px; padding: 7px 16px; cursor: pointer; color: #fff; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+#toggle-btn:hover { background: #3a3a3a; }
+#toggle-btn.on { background: #5B21B6; border-color: #7C3AED; }
+.t-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; transition: background 0.2s; }
+#toggle-btn.on .t-dot { background: #c4b5fd; }
+
+/* ─── GLOBAL SITE ───────────────────────────────────────────── */
+
+/* ISSUE #12: Sin announcement bar sticky contextual */
+.announcement-bar {
+  background: #1a1a1a; color: #fff; text-align: center;
+  padding: 9px 20px; font-size: 13px; letter-spacing: 0.01em;
+}
+.announcement-bar span { color: #fbbf24; font-weight: 600; }
+
+/* ISSUE #9: Nav sin mega menu ni buscador prominente */
+nav {
+  background: #fff; border-bottom: 1px solid #eee;
+  padding: 0 48px; display: flex; align-items: center;
+  justify-content: space-between; height: 64px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 0 #f0f0f0;
+}
+.nav-logo { font-family: 'DM Serif Display', serif; font-size: 24px; letter-spacing: -0.5px; }
+.nav-logo sup { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #888; vertical-align: super; margin-left: 2px; }
+.nav-links { display: flex; gap: 28px; list-style: none; }
+.nav-links a { font-size: 14px; color: #555; text-decoration: none; font-weight: 500; transition: color 0.15s; }
+.nav-links a:hover { color: #1a1a1a; }
+/* No mega menu — no preview de subcategorías */
+.nav-icons { display: flex; gap: 16px; align-items: center; }
+/* ISSUE #9: búsqueda como ícono pequeño, no campo visible */
+.nav-icon-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #555; display: flex; align-items: center; gap: 4px; font-family: 'DM Sans', sans-serif; }
+.cart-badge { background: #1a1a1a; color: #fff; border-radius: 10px; font-size: 10px; padding: 1px 5px; margin-left: 2px; }
+
+/* ─── HERO ──────────────────────────────────────────────────── */
+/* ISSUE #1: Headline genérico + ISSUE #2: CTA vago + ISSUE #3: Sin urgencia */
+/* ISSUE #4: Sin indicador de carousel / autoplay implícito */
+.hero {
+  position: relative; overflow: hidden;
+  height: 620px; display: flex; align-items: center;
+  background: linear-gradient(135deg, #0f1c14 0%, #1a3a26 40%, #2d5a3d 100%);
+}
+.hero-bg-text {
+  position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+  font-family: 'DM Serif Display', serif; font-size: 340px; line-height: 1;
+  color: rgba(255,255,255,0.035); letter-spacing: -20px; pointer-events: none;
+  user-select: none;
+}
+.hero-content {
+  position: relative; z-index: 2; padding: 0 80px; max-width: 680px;
+}
+.hero-eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #86efac; margin-bottom: 16px;
+}
+/* ISSUE #1: headline no comunica propuesta de valor diferencial */
+.hero-headline {
+  font-family: 'DM Serif Display', serif; font-size: 64px; line-height: 1.05;
+  color: #fff; margin-bottom: 20px; letter-spacing: -1px;
+}
+/* ISSUE #2: subtítulo genérico */
+.hero-sub {
+  font-size: 17px; color: rgba(255,255,255,0.65); line-height: 1.6;
+  margin-bottom: 36px; max-width: 480px;
+}
+.hero-ctas { display: flex; gap: 12px; align-items: center; }
+/* ISSUE #2: CTA primario vago — "Explorar" sin contexto */
+.btn-primary {
+  padding: 14px 32px; background: #fff; color: #1a1a1a; border: none;
+  border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.btn-primary:hover { background: #f0f0f0; }
+.btn-ghost {
+  padding: 14px 28px; background: transparent; color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
+  font-size: 15px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+/* ISSUE #3: Sin urgencia — sin timer, sin oferta visible */
+
+/* ISSUE #4: Carousel dots sin indicador de autoplay ni controles */
+.hero-dots {
+  position: absolute; bottom: 28px; left: 80px;
+  display: flex; gap: 6px; z-index: 2;
+}
+.h-dot { width: 24px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.25); }
+.h-dot.active { background: #fff; }
+/* Sin flecha de navegación, sin pausa — issue #4 */
+
+/* Hero image placeholder */
+.hero-img-area {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 52%;
+  overflow: hidden; opacity: 0.45;
+  background: linear-gradient(to left, transparent 0%, #1a3a26 100%);
+}
+.hero-shape {
+  position: absolute; inset: 0; opacity: 0.6;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px,
+    transparent 1px, transparent 40px
+  );
+}
+
+/* ─── VALUE PROPS ───────────────────────────────────────────── */
+/* ISSUE #5: Props sin contexto diferencial */
+.value-props {
+  background: #fff; border-bottom: 1px solid #f0f0f0;
+  padding: 20px 80px; display: flex; justify-content: space-around;
+}
+.vp-item { display: flex; align-items: center; gap: 12px; }
+.vp-icon { font-size: 22px; }
+/* ISSUE #5: Solo el ícono + label genérico, sin el "por qué importa" */
+.vp-label { font-size: 13px; font-weight: 600; color: #333; }
+.vp-sub { font-size: 11px; color: #aaa; margin-top: 1px; }
+.vp-sep { width: 1px; height: 36px; background: #f0f0f0; }
+
+/* ─── CATEGORIES ────────────────────────────────────────────── */
+.section { padding: 64px 80px; }
+.section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 32px; }
+.section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #bbb; margin-bottom: 6px; }
+.section-title { font-family: 'DM Serif Display', serif; font-size: 36px; line-height: 1.1; }
+.see-all { font-size: 13px; font-weight: 600; color: #555; text-decoration: none; border-bottom: 1px solid #e0e0e0; padding-bottom: 2px; }
+.cat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.cat-card {
+  border-radius: 12px; overflow: hidden; cursor: pointer;
+  position: relative; aspect-ratio: 3/4;
+  display: flex; align-items: flex-end;
+}
+.cat-img { position: absolute; inset: 0; background: linear-gradient(160deg, var(--c1) 0%, var(--c2) 100%); }
+.cat-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%); }
+.cat-body { position: relative; z-index: 2; padding: 16px; width: 100%; }
+.cat-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+.cat-count { font-size: 12px; color: rgba(255,255,255,0.65); }
+.cat-cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+
+/* ─── BESTSELLERS ───────────────────────────────────────────── */
+/* ISSUE #6: Sin badge "bestseller" ni indicador de popularidad en tarjeta */
+.bg-alt { background: #f4f3f0; }
+.product-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+.p-card { background: #fff; border-radius: 10px; border: 1px solid #f0f0f0; overflow: hidden; cursor: pointer; transition: box-shadow 0.2s; }
+.p-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+.p-img { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+.p-img svg { width: 90px; opacity: 0.3; }
+/* ISSUE #6: Sin badge visible en imagen — bestseller, nuevo, agotándose */
+.p-body { padding: 14px; }
+.p-brand { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #bbb; margin-bottom: 4px; }
+.p-name { font-size: 14px; font-weight: 500; color: #1a1a1a; margin-bottom: 6px; line-height: 1.3; }
+.p-rating { font-size: 12px; color: #F59E0B; margin-bottom: 8px; }
+.p-rating span { color: #aaa; }
+.p-price { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+.p-price .old { font-size: 13px; font-weight: 400; color: #bbb; text-decoration: line-through; margin-right: 6px; }
+
+/* ─── SOCIAL PROOF ──────────────────────────────────────────── */
+/* ISSUE #7: Social proof relegada a zona baja del scroll, sin indicadores en fold */
+.proof-section { background: #fff; padding: 64px 80px; }
+.proof-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.proof-left {}
+.proof-number { font-family: 'DM Serif Display', serif; font-size: 80px; line-height: 1; color: #1a1a1a; }
+.proof-number span { font-size: 32px; color: #bbb; }
+.proof-desc { font-size: 16px; color: #888; margin-top: 8px; line-height: 1.5; }
+.reviews-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.r-card { background: #f8f7f5; border-radius: 10px; padding: 16px; }
+.r-stars { font-size: 13px; color: #F59E0B; margin-bottom: 8px; }
+.r-text { font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 10px; font-style: italic; }
+.r-author { font-size: 12px; font-weight: 600; color: #aaa; }
+
+/* ─── NEWSLETTER ────────────────────────────────────────────── */
+/* ISSUE #8: CTA newsletter sin incentivo claro */
+.newsletter-section {
+  background: linear-gradient(135deg, #0f1c14 0%, #1e3a28 100%);
+  padding: 72px 80px; display: flex; align-items: center; justify-content: space-between; gap: 60px;
+}
+.nl-left { max-width: 480px; }
+.nl-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #86efac; margin-bottom: 12px; }
+/* ISSUE #8: Headline sin incentivo — "Únete a nuestra comunidad" no ofrece nada concreto */
+.nl-title { font-family: 'DM Serif Display', serif; font-size: 36px; color: #fff; line-height: 1.1; margin-bottom: 12px; }
+.nl-sub { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.6; }
+.nl-right { flex: 1; max-width: 420px; }
+.nl-form { display: flex; gap: 10px; }
+.nl-input { flex: 1; padding: 14px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; }
+.nl-input::placeholder { color: rgba(255,255,255,0.35); }
+.nl-btn { padding: 14px 24px; background: #fff; color: #1a1a1a; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+/* ISSUE #8: Sin beneficio concreto — sin descuento, sin acceso exclusivo, sin guía gratis */
+.nl-disclaimer { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 10px; }
+
+/* ─── TRUST BAR ─────────────────────────────────────────────── */
+/* ISSUE #10: Sin soporte/chat visible — floating widget ausente */
+.trust-bar { background: #fff; border-top: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; padding: 16px 80px; display: flex; justify-content: space-around; }
+.tb-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #555; font-weight: 500; }
+/* Sin chat en vivo, sin teléfono visible — issue #10 */
+
+/* ISSUE #10 ghost: chat button ausente — solo visible con anotaciones */
+.chat-ghost {
+  display: none; position: fixed; bottom: 90px; right: 28px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(220,38,38,0.07); border: 2px dashed #DC2626;
+  align-items: center; justify-content: center;
+  font-size: 11px; color: #DC2626; font-weight: 700;
+  z-index: 400; text-align: center; line-height: 1.2; padding: 6px;
+  cursor: pointer;
+}
+.annotations-on .chat-ghost { display: flex; }
+
+/* ─── FOOTER ────────────────────────────────────────────────── */
+/* ISSUE #11: Footer sin jerarquía — mismo peso visual en todo */
+/* ISSUE #12: Sin sticky CTA al scrollear — ghost */
+.sticky-bar-ghost {
+  display: none; position: fixed; top: 64px; left: 0; right: 0; z-index: 90;
+  background: rgba(220,38,38,0.06); border-bottom: 2px dashed #DC2626;
+  padding: 9px 80px; font-size: 11px; color: #DC2626; font-weight: 700;
+  letter-spacing: 0.04em; text-align: center;
+}
+.annotations-on .sticky-bar-ghost { display: block; }
+
+footer {
+  background: #111; color: #aaa; padding: 56px 80px 32px;
+}
+.footer-top { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.footer-brand .f-logo { font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff; margin-bottom: 10px; }
+.footer-brand p { font-size: 13px; line-height: 1.6; max-width: 200px; }
+/* ISSUE #11: Todos los links del footer con el mismo peso tipográfico */
+.f-col h4 { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; margin-bottom: 14px; }
+.f-col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.f-col a { font-size: 13px; color: #888; text-decoration: none; }
+.f-col a:hover { color: #ccc; }
+.footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 24px; font-size: 12px; color: #666; }
+.footer-bottom a { color: #666; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="closePanel()"></div>
+<div id="ann-panel">
+  <div id="panel-header"><h3>Issue heurístico</h3><button id="close-panel" onclick="closePanel()">×</button></div>
+  <div id="panel-body">
+    <div class="panel-num" id="p-num">#1</div>
+    <div id="p-chip" class="panel-heuristic-chip"></div>
+    <div class="panel-section-title" id="p-section"></div>
+    <div class="panel-lbl">Problema identificado</div>
+    <div class="panel-text" id="p-problema"></div>
+    <div class="panel-lbl">Hipótesis de mejora</div>
+    <div class="panel-text" id="p-hipotesis"></div>
+    <div class="panel-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-footer">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO — HOMEPAGE DESKTOP</span>
+  <div class="tb-sep"></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()"><div class="t-dot"></div> Ver anotaciones</button>
+</div>
+
+<!-- ISSUE #12 ghost: sin sticky offer bar al scrollear -->
+<div class="sticky-bar-ghost">⚠ Aquí debería aparecer barra sticky con oferta contextual al bajar el scroll — ausente</div>
+
+<!-- ANNOUNCEMENT BAR -->
+<div class="announcement-bar">Envío gratis en pedidos sobre <span>$180.000</span> · Devoluciones gratis 30 días</div>
+
+<!-- ISSUE #9: Nav sin búsqueda visible ni mega menu -->
+<div class="annotated ann-friccion" id="ann-target-9">
+  <nav>
+    <div class="nav-logo">AERO<sup>®</sup></div>
+    <ul class="nav-links">
+      <li><a href="#">Montaña</a></li>
+      <li><a href="#">Trail</a></li>
+      <li><a href="#">Camping</a></li>
+      <li><a href="#">Accesorios</a></li>
+      <li><a href="#">Outlet</a></li>
+    </ul>
+    <div class="nav-icons">
+      <button class="nav-icon-btn">🔍</button>
+      <button class="nav-icon-btn">♡</button>
+      <button class="nav-icon-btn">👤 Cuenta</button>
+      <button class="nav-icon-btn">🛒 <span class="cart-badge">1</span></button>
+    </div>
+  </nav>
+  <span class="ann-badge h-friccion" style="top:12px;right:4px;" onclick="openPanel(9)">9</span>
+</div>
+
+<!-- ── HERO ── -->
+<!-- ISSUES #1, #2, #3, #4 -->
+<div style="position:relative;">
+
+  <div class="annotated ann-claridad" id="ann-target-1">
+    <div class="annotated ann-friccion" id="ann-target-2" style="outline:none!important;">
+      <div class="annotated ann-valor" id="ann-target-3" style="outline:none!important;">
+        <div class="annotated ann-distraccion" id="ann-target-4" style="outline:none!important;">
+          <div class="hero">
+            <div class="hero-bg-text">AERO</div>
+            <div class="hero-img-area"><div class="hero-shape"></div></div>
+            <div class="hero-content">
+              <div class="hero-eyebrow">Nueva temporada · Otoño 2026</div>
+              <!-- ISSUE #1: Headline no diferencia ni comunica propuesta de valor -->
+              <h1 class="hero-headline">Equípate para<br>la aventura</h1>
+              <!-- ISSUE #2: Subtítulo y CTA vagos -->
+              <p class="hero-sub">Ropa y equipo técnico para quienes no se detienen. Explora la nueva colección.</p>
+              <div class="hero-ctas">
+                <!-- ISSUE #2: CTA "Explorar" sin decirle al usuario qué va a encontrar -->
+                <button class="btn-primary">Explorar</button>
+                <button class="btn-ghost">Ver lookbook</button>
+              </div>
+              <!-- ISSUE #3: Sin oferta temporal visible, sin urgencia -->
+            </div>
+            <!-- ISSUE #4: Dots sin controles de navegación ni pausa -->
+            <div class="hero-dots">
+              <div class="h-dot active"></div>
+              <div class="h-dot"></div>
+              <div class="h-dot"></div>
+            </div>
+          </div>
+          <span class="ann-badge h-distraccion" style="bottom:40px;right:20px;top:auto;" onclick="openPanel(4)">4</span>
+        </div>
+      </div>
+      <span class="ann-badge h-valor" style="top:50%;right:24px;transform:translateY(-50%);" onclick="openPanel(3)">3</span>
+    </div>
+    <span class="ann-badge h-friccion" style="top:50%;right:56px;transform:translateY(-50%);" onclick="openPanel(2)">2</span>
+  </div>
+  <span class="ann-badge h-claridad" style="position:absolute;top:20px;right:20px;" onclick="openPanel(1)">1</span>
+
+</div>
+
+<!-- ISSUE #5: Value props genéricas -->
+<div class="annotated ann-claridad" id="ann-target-5">
+  <div class="value-props">
+    <div class="vp-item"><div class="vp-icon">🚚</div><div><div class="vp-label">Envío gratis</div><div class="vp-sub">En compras +$180.000</div></div></div>
+    <div class="vp-sep"></div>
+    <div class="vp-item"><div class="vp-icon">↩️</div><div><div class="vp-label">Devoluciones</div><div class="vp-sub">30 días sin preguntas</div></div></div>
+    <div class="vp-sep"></div>
+    <div class="vp-item"><div class="vp-icon">🔒</div><div><div class="vp-label">Pago seguro</div><div class="vp-sub">Cifrado SSL</div></div></div>
+    <div class="vp-sep"></div>
+    <div class="vp-item"><div class="vp-icon">⭐</div><div><div class="vp-label">Calidad garantizada</div><div class="vp-sub">Satisfacción o reembolso</div></div></div>
+  </div>
+  <span class="ann-badge h-claridad" style="top:-10px;right:10px;" onclick="openPanel(5)">5</span>
+</div>
+
+<!-- CATEGORIES -->
+<div class="section">
+  <div class="section-header">
+    <div><div class="section-label">Explora</div><h2 class="section-title">Categorías</h2></div>
+    <a href="#" class="see-all">Ver todo →</a>
+  </div>
+  <div class="cat-grid">
+    <div class="cat-card"><div class="cat-img" style="--c1:#1a3a26;--c2:#0d2418;"></div><div class="cat-body"><div class="cat-name">Chaquetas</div><div class="cat-count">48 productos</div><div class="cat-cta">Explorar →</div></div></div>
+    <div class="cat-card"><div class="cat-img" style="--c1:#1a2a3a;--c2:#0d1824;"></div><div class="cat-body"><div class="cat-name">Calzado Trail</div><div class="cat-count">32 productos</div><div class="cat-cta">Explorar →</div></div></div>
+    <div class="cat-card"><div class="cat-img" style="--c1:#3a2a1a;--c2:#241808;"></div><div class="cat-body"><div class="cat-name">Mochilas</div><div class="cat-count">26 productos</div><div class="cat-cta">Explorar →</div></div></div>
+    <div class="cat-card"><div class="cat-img" style="--c1:#2a1a3a;--c2:#180d24;"></div><div class="cat-body"><div class="cat-name">Camping</div><div class="cat-count">61 productos</div><div class="cat-cta">Explorar →</div></div></div>
+  </div>
+</div>
+
+<!-- BESTSELLERS ISSUE #6 -->
+<div class="section bg-alt">
+  <div class="section-header">
+    <div><div class="section-label">Los más comprados</div><h2 class="section-title">Bestsellers</h2></div>
+    <a href="#" class="see-all">Ver todos →</a>
+  </div>
+  <!-- ISSUE #6 -->
+  <div class="annotated ann-valor" id="ann-target-6">
+    <div class="product-grid">
+
+      <div class="p-card">
+        <div class="p-img" style="background:#e8ede9;">
+          <svg viewBox="0 0 120 120" fill="none"><rect x="20" y="30" width="80" height="60" rx="8" fill="#2d5a3d" opacity="0.5"/><rect x="35" y="20" width="50" height="15" rx="4" fill="#1a3a26" opacity="0.5"/></svg>
+        </div>
+        <div class="p-body"><div class="p-brand">AERO</div><div class="p-name">Chaqueta WindShell Pro</div><div class="p-rating">★★★★★ <span>(214)</span></div><div class="p-price">$289.000</div></div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#e8eced;">
+          <svg viewBox="0 0 120 120" fill="none"><ellipse cx="60" cy="75" rx="40" ry="18" fill="#1a2a3a" opacity="0.4"/><path d="M30 75 C30 45 90 45 90 75" fill="#1a2a3a" opacity="0.5"/></svg>
+        </div>
+        <div class="p-body"><div class="p-brand">AERO</div><div class="p-name">Trail Runner X8</div><div class="p-rating">★★★★☆ <span>(167)</span></div><div class="p-price"><span class="old">$219.000</span>$175.000</div></div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#edeae8;">
+          <svg viewBox="0 0 120 120" fill="none"><path d="M40 90 L35 40 L60 30 L85 40 L80 90Z" fill="#3a2a1a" opacity="0.45"/><path d="M40 90 L60 95 L80 90" fill="#241808" opacity="0.5"/></svg>
+        </div>
+        <div class="p-body"><div class="p-brand">AERO</div><div class="p-name">Mochila Summit 35L</div><div class="p-rating">★★★★★ <span>(98)</span></div><div class="p-price">$349.000</div></div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#eae8ed;">
+          <svg viewBox="0 0 120 120" fill="none"><rect x="25" y="50" width="70" height="40" rx="6" fill="#2a1a3a" opacity="0.45"/><rect x="45" y="35" width="30" height="20" rx="4" fill="#180d24" opacity="0.45"/></svg>
+        </div>
+        <div class="p-body"><div class="p-brand">AERO</div><div class="p-name">Polar ThermoLayer</div><div class="p-rating">★★★★☆ <span>(73)</span></div><div class="p-price">$159.000</div></div>
+      </div>
+
+    </div>
+    <span class="ann-badge h-valor" style="top:-10px;right:4px;" onclick="openPanel(6)">6</span>
+  </div>
+</div>
+
+<!-- SOCIAL PROOF ISSUE #7 -->
+<div class="annotated ann-valor" id="ann-target-7">
+  <div class="proof-section">
+    <div class="proof-grid">
+      <div class="proof-left">
+        <div class="proof-number">4.8<span>/5</span></div>
+        <div class="proof-desc">Basado en +18.400 reseñas verificadas.<br>El 96% recomendaría AERO a un amigo.</div>
+      </div>
+      <div class="reviews-grid">
+        <div class="r-card"><div class="r-stars">★★★★★</div><div class="r-text">"La chaqueta aguantó 3 días de lluvia constante en el Cocuy. Impresionante."</div><div class="r-author">— Sebastián M.</div></div>
+        <div class="r-card"><div class="r-stars">★★★★★</div><div class="r-text">"Las zapatillas trail son las mejores que he tenido. Grip excepcional."</div><div class="r-author">— Laura G.</div></div>
+        <div class="r-card"><div class="r-stars">★★★★☆</div><div class="r-text">"Mochila cómoda incluso con 28kg. Los arneses son de otro nivel."</div><div class="r-author">— Andrés V.</div></div>
+        <div class="r-card"><div class="r-stars">★★★★★</div><div class="r-text">"Primera vez comprando online ropa técnica. Llegó en 2 días y tallaje perfecto."</div><div class="r-author">— Carolina P.</div></div>
+      </div>
+    </div>
+  </div>
+  <span class="ann-badge h-valor" style="top:-10px;right:10px;" onclick="openPanel(7)">7</span>
+</div>
+
+<!-- TRUST BAR ISSUE #10 -->
+<div class="annotated ann-friccion" id="ann-target-10">
+  <div class="trust-bar">
+    <div class="tb-item">✉️ soporte@aero.co</div>
+    <div class="tb-item">📋 Guía de tallas</div>
+    <div class="tb-item">🔄 Devoluciones fáciles</div>
+    <!-- Sin chat en vivo, sin teléfono, sin horario de atención visible -->
+  </div>
+  <span class="ann-badge h-friccion" style="top:-10px;right:10px;" onclick="openPanel(10)">10</span>
+</div>
+
+<!-- NEWSLETTER ISSUE #8 -->
+<div class="annotated ann-friccion" id="ann-target-8">
+  <div class="newsletter-section">
+    <div class="nl-left">
+      <div class="nl-eyebrow">Newsletter</div>
+      <!-- ISSUE #8: Sin incentivo concreto -->
+      <h2 class="nl-title">Únete a la comunidad AERO</h2>
+      <p class="nl-sub">Recibe novedades, inspiración y contenido exclusivo directo a tu correo.</p>
+    </div>
+    <div class="nl-right">
+      <div class="nl-form">
+        <input class="nl-input" type="email" placeholder="tu@correo.com">
+        <button class="nl-btn">Suscribirse</button>
+      </div>
+      <div class="nl-disclaimer">Sin spam. Cancela cuando quieras.</div>
+    </div>
+  </div>
+  <span class="ann-badge h-friccion" style="top:-10px;right:10px;" onclick="openPanel(8)">8</span>
+</div>
+
+<!-- FOOTER ISSUES #11 -->
+<div class="annotated ann-claridad" id="ann-target-11">
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand"><div class="f-logo">AERO</div><p>Equipo técnico para exploración y montaña. Hecho para los que no se detienen.</p></div>
+      <div class="f-col"><h4>Tienda</h4><ul><li><a href="#">Montaña</a></li><li><a href="#">Trail</a></li><li><a href="#">Camping</a></li><li><a href="#">Accesorios</a></li><li><a href="#">Outlet</a></li></ul></div>
+      <div class="f-col"><h4>Soporte</h4><ul><li><a href="#">Mi cuenta</a></li><li><a href="#">Rastrear pedido</a></li><li><a href="#">Devoluciones</a></li><li><a href="#">Guía de tallas</a></li><li><a href="#">FAQ</a></li></ul></div>
+      <div class="f-col"><h4>Empresa</h4><ul><li><a href="#">Sobre AERO</a></li><li><a href="#">Sustentabilidad</a></li><li><a href="#">Embajadores</a></li><li><a href="#">Blog</a></li><li><a href="#">Trabajo</a></li></ul></div>
+      <div class="f-col"><h4>Legal</h4><ul><li><a href="#">Términos</a></li><li><a href="#">Privacidad</a></li><li><a href="#">Cookies</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 AERO. Todos los derechos reservados.</span>
+      <span>🇨🇴 Colombia · COP</span>
+    </div>
+  </footer>
+  <span class="ann-badge h-claridad" style="top:-10px;right:10px;" onclick="openPanel(11)">11</span>
+</div>
+
+<!-- ISSUE #10: Botón de chat ausente (ghost) -->
+<div class="chat-ghost" onclick="openPanel(10)">💬<br>sin chat</div>
+
+<!-- ISSUE #12: Sticky offer bar ausente -->
+<div class="annotated ann-friccion" id="ann-target-12" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:1px;height:1px;overflow:visible;">
+  <span class="ann-badge h-friccion" style="top:0;right:0;" onclick="openPanel(12)">12</span>
+</div>
+
+<script>
+const annotations = {
+  1:{heuristic:"Claridad",color:"#D97706",section:"Headline del hero no comunica propuesta de valor",problema:"'Equípate para la aventura' es un claim aspiracional genérico que podría pertenecer a cualquier marca outdoor. No comunica qué diferencia a AERO: tecnología, precio, durabilidad, fabricación, especificidad técnica. El usuario que llega por primera vez no puede saber por qué elegir AERO sobre cualquier competidor.",hipotesis:"Reemplazar por un headline que vincule la propuesta diferencial con el contexto del usuario: '3 capas para 0°C. Ligero como el trail, durable como la roca.' o 'Equipo técnico sin concesiones. Diseñado en los Andes.' El headline del hero es el elemento de mayor jerarquía — debe hacer el trabajo de diferenciación en 3 segundos.",severidad:3},
+  2:{heuristic:"Fricción",color:"#DC2626",section:"CTA principal 'Explorar' sin contexto de destino",problema:"'Explorar' no dice nada sobre a dónde lleva ni qué va a encontrar el usuario. Es el equivalente a un letrero que solo dice 'Entrar'. Un CTA debe comunicar el valor de la acción, no solo el acto. Además, tener dos CTAs de similar jerarquía visual ('Explorar' y 'Ver lookbook') divide la atención sin una diferenciación clara de intención.",hipotesis:"Cambiar el CTA primario a algo específico y orientado a la temporada: 'Ver colección Otoño 2026' o 'Explorar chaquetas' si el hero muestra chaquetas. El CTA secundario debe tener menor jerarquía visual (ghost/outline). Un CTA claro reduce el tiempo de decisión y aumenta el CTR al siguiente paso.",severidad:2},
+  3:{heuristic:"Propuesta de Valor",color:"#059669",section:"Hero sin urgencia ni señal de oferta temporal",problema:"El hero no contiene ningún elemento de urgencia: sin oferta temporal con countdown, sin descuento visible, sin 'quedan X unidades', sin mensaje de temporada. Para un usuario en etapa de consideración que no ha decidido comprar, la ausencia de urgencia reduce la probabilidad de conversión inmediata.",hipotesis:"Para usuarios nuevos: mostrar oferta de bienvenida en el hero ('10% en tu primera compra · Código: BIENVENIDO'). Para campañas activas: incorporar countdown timer si hay fecha límite. Para temporada: badge 'Nueva colección Otoño 2026'. La urgencia genuina y contextual puede incrementar la conversión del hero entre 10–20%.",severidad:2},
+  4:{heuristic:"Distracción",color:"#7C3AED",section:"Carousel con autoplay implícito y sin controles visibles",problema:"Los tres dots del hero sugieren carousel pero no hay flechas de navegación, ni botón de pausa, ni indicador de progreso. Si el carousel tiene autoplay activado, el contenido cambia sin que el usuario lo espere, interrumpiendo su lectura del headline y generando desorientación. La animación involuntaria es uno de los patrones más penalizados en auditorías de UX.",hipotesis:"Opción A: Eliminar el carousel y usar una imagen estática de alto impacto — los carousels tienen tasas de interacción muy bajas (< 1% en slides 2 y 3). Opción B: Si se mantiene el carousel, agregar controles visibles (flechas + pausa), desactivar el autoplay y asegurar que los dots sean suficientemente grandes para clicar (mín. 12×12px).",severidad:2},
+  5:{heuristic:"Claridad",color:"#D97706",section:"Value props genéricas sin diferenciación real",problema:"'Envío gratis', 'Devoluciones 30 días', 'Pago seguro', 'Calidad garantizada' son los mismos cuatro items que aparecen en el 90% de los ecommerces. No diferencian a AERO ni comunican ninguna ventaja competitiva real. El usuario los ignora por estar sobreexpuesto a este patrón.",hipotesis:"Reemplazar por props que sean específicas y verificables para AERO: 'Probado a −20°C en los Andes', 'Reparación gratuita de por vida', 'Envío en 24h desde Bogotá', 'Tejidos reciclados certificados bluesign®'. Las props deben responder a objeciones reales del comprador, no ser decorativas.",severidad:2},
+  6:{heuristic:"Propuesta de Valor",color:"#059669",section:"Bestsellers sin señales de popularidad ni urgencia en tarjeta",problema:"La sección se llama 'Bestsellers' pero ninguna tarjeta lo evidencia: no hay badge '#1 más vendido', no hay contador de unidades vendidas, no hay indicador de stock bajo. La promesa del título ('los más comprados') no está respaldada por ningún elemento visual en las tarjetas, haciendo que la sección sea indistinguible de cualquier otra.",hipotesis:"Para el producto #1: badge visual prominente 'El más vendido'. Para productos con alta rotación: '+500 vendidos esta semana'. Para stock bajo: 'Quedan 4' en color cálido. Para productos con descuento: precio original tachado + badge de porcentaje. Las señales de popularidad actúan como prueba social inline y aceleran la decisión.",severidad:2},
+  7:{heuristic:"Propuesta de Valor",color:"#059669",section:"Social proof relegada bajo el fold — no visible en landing",problema:"Las reseñas y el rating agregado (4.8/5 · 18K+ reviews) están en la mitad inferior de la página, visible solo después de scrollear pasada la sección de bestsellers. Un usuario que no hace scroll nunca ve esta información crítica para la decisión de compra. La prueba social debe estar disponible desde el primer contacto.",hipotesis:"Mover elementos de prueba social al fold: (1) Rating + número de reseñas en la barra de value props o bajo el hero. (2) Badge con número de clientes '18.000+ aventureros equipados' cerca del headline. (3) Un testimonio rotativo en la sección de categorías. La exposición temprana de social proof aumenta la permanencia en el sitio.",severidad:3},
+  8:{heuristic:"Fricción",color:"#DC2626",section:"Newsletter sin incentivo — por qué me iba a suscribir",problema:"'Únete a la comunidad AERO' y 'Recibe novedades e inspiración' son el equivalente de pedir el email de un stranger diciéndole 'para enviarte cosas'. El usuario no tiene ningún motivo concreto para dar su correo: no hay descuento de bienvenida, no hay contenido exclusivo prometido, no hay guía descargable, no hay acceso early a drops.",hipotesis:"Ofrecer un incentivo concreto y creíble: '10% en tu primera compra al suscribirte', 'Acceso anticipado a drops de temporada + guía de equipo técnico PDF'. El incentivo debe estar en el headline, no en letra pequeña. Con un incentivo claro, las tasas de conversión de formularios de newsletter pueden multiplicarse por 3–5x.",severidad:2},
+  9:{heuristic:"Fricción",color:"#DC2626",section:"Nav sin mega menu ni buscador visible — acceso a catálogo sub-óptimo",problema:"La navegación tiene 5 categorías como links simples sin mega menu que previewing subcategorías, colecciones o productos destacados. El buscador es un ícono pequeño sin campo visible. Para un catálogo de equipo outdoor con variedad de tipos de producto, el usuario tiene que adivinar en qué categoría está lo que busca o hacer clic y esperar.",hipotesis:"Implementar mega menu en hover con: imagen de categoría + subcategorías + 1–2 productos destacados + link 'Ver todo'. El buscador debe ser un campo visible en desktop, no un ícono que expande. Estas dos mejoras reducen la tasa de rebote desde el nav y acortan el camino al producto correcto.",severidad:2},
+  10:{heuristic:"Fricción",color:"#DC2626",section:"Sin soporte visible — chat, teléfono ni horario accesible",problema:"El único punto de contacto visible es un email en el footer. No hay chat en vivo, no hay número de teléfono, no hay indicador de tiempo de respuesta, no hay horario de atención. Para productos técnicos de precio alto (chaquetas $289K, mochilas $349K), el soporte accesible es un factor clave en la decisión de compra, especialmente en primer pedido.",hipotesis:"Implementar: (1) Widget de chat flotante con indicador de disponibilidad 'En línea / Responde en < 5 min'. (2) Banner de soporte en header o trust bar con horario visible: 'Lun-Vie 9–18h'. (3) Para fuera de horario: bot de FAQ o formulario de callback. La accesibilidad del soporte tiene impacto directo en la tasa de conversión de nuevos usuarios.",severidad:2},
+  11:{heuristic:"Claridad",color:"#D97706",section:"Footer con jerarquía plana — todos los links con mismo peso",problema:"Los 4 bloques del footer ('Tienda', 'Soporte', 'Empresa', 'Legal') tienen exactamente la misma jerarquía tipográfica y visual. Los links de soporte de alta frecuencia ('Rastrear pedido', 'Devoluciones') tienen el mismo peso que 'Términos y condiciones'. El usuario que busca soporte post-compra tiene que escanear toda la estructura para encontrar lo que necesita.",hipotesis:"Dar mayor jerarquía visual a las acciones de alta frecuencia: 'Rastrear mi pedido' y 'Iniciar devolución' como botones o links destacados fuera de la columna estándar. Separar acciones transaccionales de links institucionales. La jerarquía del footer debe reflejar las tareas más comunes del usuario post-compra.",severidad:1},
+  12:{heuristic:"Fricción",color:"#DC2626",section:"Sin barra sticky de oferta al scrollear — pérdida de contexto",problema:"Cuando el usuario scrollea pasado el hero, pierde de vista la oferta anunciada ('Envío gratis +$180K') y el announcement bar queda fuera del viewport. No hay ningún elemento sticky que mantenga la propuesta de valor o el CTA visible durante el scroll. Un usuario que llega al 60% de la página y quiere comprar tiene que volver a scrollear hacia arriba o buscar un CTA.",hipotesis:"Implementar una barra sticky minimalista que aparezca al scrollear 300px hacia abajo, con: logo, oferta activa clave ('Envío gratis hoy') y un CTA principal. La barra debe ser colapsable y no ocupar más de 48px de alto. Esta es una de las mejoras de mayor impacto en conversión para páginas de homepage largas.",severidad:2}
+};
+
+let annotationsActive = false;
+let currentAnn = 1;
+
+function toggleAnnotations() {
+  annotationsActive = !annotationsActive;
+  document.body.classList.toggle('annotations-on', annotationsActive);
+  const btn = document.getElementById('toggle-btn');
+  btn.classList.toggle('on', annotationsActive);
+  btn.innerHTML = `<div class="t-dot"></div> ${annotationsActive ? 'Ocultar anotaciones' : 'Ver anotaciones'}`;
+}
+
+function openPanel(num) {
+  currentAnn = num;
+  const d = annotations[num];
+  document.getElementById('p-num').textContent = '#' + num;
+  const chip = document.getElementById('p-chip');
+  chip.textContent = d.heuristic; chip.style.background = d.color;
+  document.getElementById('p-section').textContent = d.section;
+  document.getElementById('p-problema').textContent = d.problema;
+  document.getElementById('p-hipotesis').textContent = d.hipotesis;
+  const sevDiv = document.getElementById('p-sev');
+  sevDiv.innerHTML = '';
+  for(let i=1;i<=3;i++){
+    const pip = document.createElement('div');
+    pip.className = 'sev-pip';
+    pip.style.background = i <= d.severidad ? d.color : '#eee';
+    sevDiv.appendChild(pip);
+  }
+  sevDiv.insertAdjacentHTML('beforeend',`<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`);
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+
+function nav(dir) {
+  const keys = Object.keys(annotations).map(Number);
+  let idx = keys.indexOf(currentAnn) + dir;
+  if(idx < 0) idx = keys.length-1;
+  if(idx >= keys.length) idx = 0;
+  openPanel(keys[idx]);
+}
+</script>
+</body>
+</html>
