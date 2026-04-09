@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico — Thank You Page Desktop</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#f8f7f5;color:#1a1a1a;}
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated{position:relative;}
+.ann-badge{display:none;position:absolute;z-index:500;width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:800;color:#fff;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.95);transition:transform 0.15s;top:-10px;right:-10px;}
+.ann-badge:hover{transform:scale(1.2);}
+.ann-badge.active-badge{transform:scale(1.3);box-shadow:0 0 0 4px rgba(255,255,255,0.4);}
+.annotations-on .ann-badge{display:flex;}
+.annotations-on .annotated{outline:2px dashed;outline-offset:2px;}
+.h-friccion{background:#DC2626;} .h-distraccion{background:#7C3AED;} .h-claridad{background:#D97706;} .h-valor{background:#059669;}
+.ann-friccion{outline-color:rgba(220,38,38,0.25)!important;} .ann-distraccion{outline-color:rgba(124,58,237,0.25)!important;} .ann-claridad{outline-color:rgba(217,119,6,0.25)!important;} .ann-valor{outline-color:rgba(5,150,105,0.25)!important;}
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel{position:fixed;top:0;right:-420px;width:400px;height:100vh;background:#fff;border-left:1px solid #e5e5e5;z-index:1000;transition:right 0.3s ease;overflow-y:auto;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,0.1);}
+#ann-panel.open{right:0;}
+#panel-header{padding:20px 20px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;}
+#panel-header h3{font-size:11px;font-weight:700;color:#bbb;letter-spacing:0.1em;text-transform:uppercase;}
+#close-panel{cursor:pointer;width:32px;height:32px;border-radius:50%;background:#f4f4f4;border:none;display:flex;align-items:center;justify-content:center;font-size:18px;color:#555;}
+#close-panel:hover{background:#ebebeb;}
+#panel-body{padding:22px 20px;flex:1;}
+.panel-num{font-size:48px;font-weight:200;color:#e8e8e8;line-height:1;}
+.panel-heuristic-chip{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;margin-bottom:14px;}
+.panel-section-title{font-size:19px;font-weight:600;color:#111;margin-bottom:18px;line-height:1.3;}
+.panel-lbl{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#bbb;margin-bottom:6px;margin-top:18px;}
+.panel-text{font-size:14px;line-height:1.7;color:#444;}
+.sev-row{display:flex;align-items:center;gap:4px;margin-top:6px;}
+.sev-pip{width:28px;height:7px;border-radius:4px;}
+#panel-footer{display:flex;gap:8px;padding:16px 20px;border-top:1px solid #f0f0f0;position:sticky;bottom:0;background:#fff;}
+#panel-footer button{flex:1;padding:9px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;font-size:13px;cursor:pointer;color:#555;font-family:'DM Sans',sans-serif;}
+#panel-footer button:hover{background:#f8f8f8;}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:900;}
+#overlay.show{display:block;}
+
+/* ─── TOOLBAR ────────────────────────────────────────────────── */
+#lab-toolbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;border-radius:40px;padding:10px 22px;display:flex;align-items:center;gap:14px;z-index:800;box-shadow:0 8px 32px rgba(0,0,0,0.28);white-space:nowrap;}
+.tb-label{font-size:12px;color:#888;font-weight:600;letter-spacing:0.05em;}
+.tb-sep{width:1px;height:20px;background:#333;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#bbb;}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+#toggle-btn{display:flex;align-items:center;gap:8px;background:#2d2d2d;border:1px solid #444;border-radius:24px;padding:7px 16px;cursor:pointer;color:#fff;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+#toggle-btn:hover{background:#3a3a3a;}
+#toggle-btn.on{background:#5B21B6;border-color:#7C3AED;}
+.t-dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background 0.2s;}
+#toggle-btn.on .t-dot{background:#c4b5fd;}
+
+/* ─── SITE CHROME ───────────────────────────────────────────── */
+nav{background:#fff;border-bottom:1px solid #eee;padding:0 60px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'DM Serif Display',serif;font-size:22px;}
+.nav-icons{display:flex;gap:16px;}
+.nav-icon-btn{background:none;border:none;cursor:pointer;font-size:13px;color:#555;font-family:'DM Sans',sans-serif;}
+
+/* ─── PAGE ───────────────────────────────────────────────────── */
+.page{max-width:960px;margin:0 auto;padding:56px 40px 140px;}
+
+/* ── CONFIRMATION HEADER ── */
+/* ISSUE #1: Confirmación genérica sin número de pedido prominente */
+.confirm-header{text-align:center;padding:40px 0 36px;border-bottom:1px solid #f0f0f0;margin-bottom:36px;}
+.confirm-icon{width:64px;height:64px;border-radius:50%;background:#f0fdf4;border:2px solid #bbf7d0;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;}
+.confirm-title{font-family:'DM Serif Display',serif;font-size:36px;margin-bottom:8px;}
+/* ISSUE #1: Subtítulo genérico sin número de orden visible */
+.confirm-sub{font-size:16px;color:#888;margin-bottom:16px;}
+/* ISSUE #1 ghost: número de orden ausente o poco visible */
+.order-num-ghost{display:none;font-size:12px;color:#D97706;font-weight:700;background:rgba(217,119,6,0.06);border:1.5px dashed #D97706;border-radius:6px;padding:6px 14px;display:inline-block;}
+.annotations-on .order-num-ghost{display:inline-block;}
+/* ISSUE #2: Sin instrucción de "revisa tu email" prominente */
+.email-note{font-size:13px;color:#aaa;margin-top:8px;}
+
+/* ── TWO COLUMN ── */
+.typ-layout{display:grid;grid-template-columns:1fr 340px;gap:28px;align-items:start;}
+
+/* ── LEFT ── */
+/* ISSUE #3: Resumen del pedido incompleto — sin imagen, sin total claro */
+.order-summary-box{background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;margin-bottom:24px;}
+.box-header{padding:14px 20px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;justify-content:space-between;}
+.box-title{font-size:14px;font-weight:700;color:#1a1a1a;}
+.box-link{font-size:12px;color:#aaa;text-decoration:none;}
+
+.order-item{padding:16px 20px;border-bottom:1px solid #f5f5f5;display:flex;gap:14px;align-items:center;}
+.order-item:last-child{border-bottom:none;}
+/* ISSUE #3: Sin imagen del producto en el resumen */
+.oi-img-ghost{display:none;width:60px;height:60px;border-radius:8px;background:rgba(217,119,6,0.06);border:2px dashed #D97706;flex-shrink:0;align-items:center;justify-content:center;font-size:9px;color:#D97706;font-weight:700;text-align:center;line-height:1.3;}
+.annotations-on .oi-img-ghost{display:flex;}
+.oi-img{width:60px;height:60px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.oi-img svg{width:44px;opacity:0.3;}
+.oi-info{flex:1;}
+.oi-name{font-size:14px;font-weight:600;margin-bottom:3px;}
+.oi-attrs{font-size:12px;color:#aaa;}
+.oi-price{font-size:15px;font-weight:700;}
+
+.order-totals{padding:14px 20px;background:#fafafa;border-top:1px solid #f0f0f0;}
+.tot-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.tot-label{color:#888;}
+.tot-value{font-weight:500;}
+.tot-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;border-top:1px solid #eee;padding-top:10px;margin-top:4px;}
+
+/* ISSUE #4: Tracking info ausente / genérica */
+.tracking-box{background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;margin-bottom:24px;}
+.tracking-body{padding:20px;}
+.tracking-steps{display:flex;flex-direction:column;gap:0;}
+.t-step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;}
+.t-step:not(:last-child){border-bottom:1px solid #f5f5f5;}
+.t-dot-wrap{display:flex;flex-direction:column;align-items:center;gap:0;}
+.t-step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.t-step.done .t-step-dot{background:#f0fdf4;border:2px solid #bbf7d0;}
+.t-step.active .t-step-dot{background:#eff6ff;border:2px solid #bfdbfe;}
+.t-step.pending .t-step-dot{background:#f5f5f5;border:2px solid #e5e5e5;}
+.t-step-body{flex:1;}
+.t-step-title{font-size:13px;font-weight:600;margin-bottom:2px;}
+.t-step.pending .t-step-title{color:#bbb;}
+/* ISSUE #4: Sin fecha estimada de entrega específica */
+.t-step-sub{font-size:12px;color:#aaa;}
+.t-step-sub.missing{display:none;color:#D97706;font-weight:600;}
+.annotations-on .t-step-sub.missing{display:block;}
+
+/* ISSUE #8: Sin botón de añadir al calendario para entrega */
+.cal-ghost{display:none;font-size:11px;color:#059669;font-weight:700;padding:4px 10px;background:rgba(5,150,105,0.06);border:1.5px dashed #059669;border-radius:6px;margin-top:6px;}
+.annotations-on .cal-ghost{display:inline-block;}
+
+/* ISSUE #5: Shipping address sin opción de editar */
+.address-box{background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;margin-bottom:24px;}
+.address-body{padding:20px;}
+.addr-row{display:flex;justify-content:space-between;align-items:flex-start;}
+.addr-text{font-size:14px;line-height:1.7;color:#555;}
+/* ISSUE #5: Sin botón editar dirección post-compra */
+.edit-ghost{display:none;font-size:12px;color:#D97706;font-weight:700;cursor:pointer;padding:4px 10px;background:rgba(217,119,6,0.06);border:1.5px dashed #D97706;border-radius:6px;}
+.annotations-on .edit-ghost{display:block;}
+
+/* ── RIGHT COLUMN ── */
+/* ISSUE #6: Acciones post-compra sin jerarquía */
+.actions-box{background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;margin-bottom:20px;}
+.actions-body{padding:20px;display:flex;flex-direction:column;gap:10px;}
+.action-btn{width:100%;padding:12px 16px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid #e5e5e5;background:#fff;text-align:left;display:flex;align-items:center;gap:10px;}
+.action-btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.action-btn:hover:not(.primary){background:#f8f8f8;}
+.action-icon{font-size:16px;}
+
+/* ISSUE #9: Sin referral / compartir */
+.share-ghost{display:none;background:rgba(5,150,105,0.05);border:1.5px dashed #059669;border-radius:8px;padding:10px 14px;font-size:11px;color:#059669;font-weight:700;text-align:center;}
+.annotations-on .share-ghost{display:block;}
+
+/* ISSUE #7: Cross-sell no contextual */
+.recs-section{margin-top:4px;}
+.recs-box{background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;}
+.recs-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#f0f0f0;}
+.rec-card{background:#fff;padding:14px;cursor:pointer;}
+.rec-img{height:80px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+.rec-img svg{width:44px;opacity:0.25;}
+.rec-name{font-size:12px;font-weight:600;margin-bottom:3px;line-height:1.3;}
+.rec-price{font-size:13px;font-weight:700;}
+.rec-add{font-size:11px;color:#555;background:#f5f5f5;border:1px solid #eee;border-radius:4px;padding:4px 8px;margin-top:5px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif;}
+
+/* ISSUE #10: NPS / review request ausente */
+.nps-ghost{display:none;background:rgba(5,150,105,0.05);border:1.5px dashed #059669;border-radius:10px;padding:14px 16px;margin-top:20px;font-size:11px;color:#059669;font-weight:700;text-align:center;}
+.annotations-on .nps-ghost{display:block;}
+
+/* ISSUE #11: Sin programa de fidelización / puntos */
+.loyalty-ghost{display:none;background:rgba(124,58,237,0.05);border:1.5px dashed #7C3AED;border-radius:10px;padding:14px 16px;margin-top:12px;font-size:11px;color:#7C3AED;font-weight:700;text-align:center;}
+.annotations-on .loyalty-ghost{display:block;}
+
+/* ISSUE #12: Footer completo — rutas de fuga */
+footer{background:#1a1a1a;color:#aaa;padding:40px 60px 28px;margin-top:60px;}
+.footer-inner{max-width:960px;margin:0 auto;}
+.footer-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:36px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.f-logo{font-family:'DM Serif Display',serif;font-size:20px;color:#fff;margin-bottom:8px;}
+.f-desc{font-size:12px;line-height:1.6;}
+.f-col h4{font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#fff;margin-bottom:12px;}
+.f-col ul{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.f-col a{font-size:12px;color:#888;text-decoration:none;}
+.f-col a:hover{color:#ccc;}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:20px;font-size:11px;color:#555;}
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="closePanel()"></div>
+<div id="ann-panel">
+  <div id="panel-header"><h3>Issue heurístico</h3><button id="close-panel" onclick="closePanel()">×</button></div>
+  <div id="panel-body">
+    <div class="panel-num" id="p-num">#1</div>
+    <div id="p-chip" class="panel-heuristic-chip"></div>
+    <div class="panel-section-title" id="p-section"></div>
+    <div class="panel-lbl">Problema identificado</div>
+    <div class="panel-text" id="p-problema"></div>
+    <div class="panel-lbl">Hipótesis de mejora</div>
+    <div class="panel-text" id="p-hipotesis"></div>
+    <div class="panel-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-footer">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB HEURÍSTICO — THANK YOU PAGE DESKTOP</span>
+  <div class="tb-sep"></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()"><div class="t-dot"></div> Ver anotaciones</button>
+</div>
+
+<nav>
+  <div class="nav-logo">STRYDE</div>
+  <div class="nav-icons">
+    <button class="nav-icon-btn">🔍</button>
+    <button class="nav-icon-btn">👤 Cuenta</button>
+    <button class="nav-icon-btn">🛒</button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- ISSUE #1: Confirmación genérica sin número de orden prominente -->
+  <div class="annotated ann-claridad" id="ann-target-1">
+    <div class="confirm-header">
+      <div class="confirm-icon">✓</div>
+      <h1 class="confirm-title">¡Gracias por tu compra!</h1>
+      <!-- ISSUE #1: subtítulo genérico, número de orden casi invisible -->
+      <p class="confirm-sub">Tu pedido ha sido recibido y está siendo procesado.</p>
+      <div class="order-num-ghost">⚠ Número de pedido ausente o poco visible: #STR-2026-08847</div>
+      <!-- ISSUE #2: Sin instrucción clara de revisar email -->
+      <p class="email-note">Recibirás un correo de confirmación.</p>
+    </div>
+    <span class="ann-badge h-claridad" style="top:12px;right:12px;" onclick="openPanel(1)">1</span>
+  </div>
+
+  <!-- ISSUE #2: Sin instrucción de email prominente -->
+  <div class="annotated ann-claridad" id="ann-target-2" style="display:none;height:0;overflow:visible;">
+    <span class="ann-badge h-claridad" onclick="openPanel(2)">2</span>
+  </div>
+
+  <div class="typ-layout">
+
+    <!-- LEFT -->
+    <div>
+
+      <!-- ISSUE #3: Resumen del pedido sin imagen ni desglose claro -->
+      <div class="annotated ann-claridad" id="ann-target-3">
+        <div class="order-summary-box">
+          <div class="box-header">
+            <span class="box-title">Resumen del pedido</span>
+            <!-- Número de orden pequeño aquí — issue #1 -->
+            <span style="font-size:12px;color:#ccc;">#STR-2026-08847</span>
+          </div>
+          <div class="order-item">
+            <div class="oi-img" style="background:#f0efed;">
+              <svg viewBox="0 0 160 100" fill="none"><path d="M8 68C8 68 24 32 62 28C96 24 128 42 140 52C148 58 150 64 148 70L144 75C136 77 120 79 80 79C50 79 20 76 12 74Z" fill="#777"/><path d="M62 28C70 16 86 14 95 21C104 28 98 34 90 33C82 32 74 30 62 28Z" fill="#999"/><path d="M8 68L148 70 144 79C118 84 46 84 12 79Z" fill="#555"/></svg>
+            </div>
+            <div class="oi-img-ghost">Sin imagen</div>
+            <div class="oi-info">
+              <div class="oi-name">Running Pro V2</div>
+              <div class="oi-attrs">Talla 42 · Negro · ×1</div>
+            </div>
+            <div class="oi-price">$189.000</div>
+          </div>
+          <div class="order-item">
+            <div class="oi-img" style="background:#edeae8;">
+              <svg viewBox="0 0 160 100" fill="none"><path d="M40 90 L35 40 L60 30 L85 40 L80 90Z" fill="#3a2a1a" opacity="0.45"/></svg>
+            </div>
+            <div class="oi-img-ghost">Sin imagen</div>
+            <div class="oi-info">
+              <div class="oi-name">Mochila Trail 20L</div>
+              <div class="oi-attrs">Verde oliva · ×1</div>
+            </div>
+            <div class="oi-price">$249.000</div>
+          </div>
+          <div class="order-totals">
+            <div class="tot-row"><span class="tot-label">Subtotal</span><span class="tot-value">$438.000</span></div>
+            <div class="tot-row"><span class="tot-label">Envío</span><span class="tot-value">Gratis</span></div>
+            <div class="tot-total"><span>Total pagado</span><span>$438.000</span></div>
+          </div>
+        </div>
+        <span class="ann-badge h-claridad" style="top:-10px;right:4px;" onclick="openPanel(3)">3</span>
+      </div>
+
+      <!-- ISSUE #4: Tracking sin fecha estimada ni link de seguimiento -->
+      <div class="annotated ann-claridad" id="ann-target-4">
+        <div class="tracking-box">
+          <div class="box-header">
+            <span class="box-title">Estado del pedido</span>
+          </div>
+          <div class="tracking-body">
+            <div class="tracking-steps">
+              <div class="t-step done">
+                <div class="t-step-dot">✓</div>
+                <div class="t-step-body">
+                  <div class="t-step-title">Pedido confirmado</div>
+                  <div class="t-step-sub">Hoy, 14 abr 2026 · 3:47 PM</div>
+                </div>
+              </div>
+              <div class="t-step active">
+                <div class="t-step-dot">⚙</div>
+                <div class="t-step-body">
+                  <div class="t-step-title">En preparación</div>
+                  <!-- ISSUE #4: Sin fecha estimada de despacho -->
+                  <div class="t-step-sub">En proceso</div>
+                  <div class="t-step-sub missing">⚠ Falta: "Despacho estimado: 15 abr" — ausente</div>
+                </div>
+              </div>
+              <div class="t-step pending">
+                <div class="t-step-dot">🚚</div>
+                <div class="t-step-body">
+                  <div class="t-step-title">En camino</div>
+                  <div class="t-step-sub">Pendiente</div>
+                </div>
+              </div>
+              <div class="t-step pending">
+                <div class="t-step-dot">📦</div>
+                <div class="t-step-body">
+                  <div class="t-step-title">Entregado</div>
+                  <!-- ISSUE #4: Sin fecha estimada de entrega -->
+                  <div class="t-step-sub">Pendiente</div>
+                  <div class="t-step-sub missing">⚠ Falta: "Entrega estimada: 17–18 abr" — ausente</div>
+                  <!-- ISSUE #8: Sin add to calendar para la entrega -->
+                  <div class="cal-ghost">⚠ "+ Recordatorio de entrega al calendario" — ausente</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="ann-badge h-claridad" style="top:-10px;right:4px;" onclick="openPanel(4)">4</span>
+      </div>
+
+      <!-- ISSUE #5: Dirección sin posibilidad de editar -->
+      <div class="annotated ann-friccion" id="ann-target-5">
+        <div class="address-box">
+          <div class="box-header">
+            <span class="box-title">Dirección de entrega</span>
+            <!-- Sin opción de corrección rápida -->
+            <div class="edit-ghost">⚠ Sin botón "Editar antes del despacho"</div>
+          </div>
+          <div class="address-body">
+            <div class="addr-row">
+              <div class="addr-text">
+                Andrés Vargas<br>
+                Calle 93 # 11-28, Apto 501<br>
+                Bogotá D.C., Colombia<br>
+                +57 310 555 0198
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="ann-badge h-friccion" style="top:-10px;right:4px;" onclick="openPanel(5)">5</span>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div>
+
+      <!-- ISSUE #6: Acciones post-compra sin jerarquía clara -->
+      <div class="annotated ann-claridad" id="ann-target-6">
+        <div class="actions-box">
+          <div class="box-header"><span class="box-title">¿Qué quieres hacer?</span></div>
+          <div class="actions-body">
+            <!-- Todos los botones con el mismo peso visual — issue #6 -->
+            <button class="action-btn"><span class="action-icon">🛍</span> Seguir comprando</button>
+            <button class="action-btn"><span class="action-icon">📋</span> Ver mis pedidos</button>
+            <button class="action-btn"><span class="action-icon">↩️</span> Política de devoluciones</button>
+            <button class="action-btn"><span class="action-icon">💬</span> Contactar soporte</button>
+          </div>
+        </div>
+        <span class="ann-badge h-claridad" style="top:-10px;right:4px;" onclick="openPanel(6)">6</span>
+      </div>
+
+      <!-- ISSUE #9: Sin opción de referir amigos / compartir -->
+      <div class="annotated ann-valor" id="ann-target-9">
+        <div class="share-ghost">⚠ Aquí debería ir: "Comparte y gana $10K" o referral link — ausente</div>
+        <span class="ann-badge h-valor" style="top:-4px;right:4px;" onclick="openPanel(9)">9</span>
+      </div>
+
+      <!-- ISSUE #7: Cross-sell no contextual -->
+      <div class="annotated ann-valor" id="ann-target-7">
+        <div class="recs-section">
+          <div class="box-header" style="padding:14px 0 10px;"><span class="box-title">También te puede interesar</span></div>
+          <div class="recs-box">
+            <div class="recs-grid">
+              <!-- Productos genéricos sin relación con lo comprado -->
+              <div class="rec-card">
+                <div class="rec-img" style="background:#f5f0ee;"><svg viewBox="0 0 120 120" fill="none"><rect x="30" y="40" width="60" height="50" rx="6" fill="#C2A882" opacity="0.4"/></svg></div>
+                <div class="rec-name">Gorra Running STRYDE</div>
+                <div class="rec-price">$49.000</div>
+                <button class="rec-add">+ Agregar</button>
+              </div>
+              <div class="rec-card">
+                <div class="rec-img" style="background:#f2f2f0;"><svg viewBox="0 0 120 120" fill="none"><rect x="25" y="45" width="70" height="40" rx="6" fill="#6B7280" opacity="0.3"/></svg></div>
+                <div class="rec-name">Medias Trail Pack ×3</div>
+                <div class="rec-price">$35.000</div>
+                <button class="rec-add">+ Agregar</button>
+              </div>
+              <div class="rec-card">
+                <div class="rec-img" style="background:#eef5f0;"><svg viewBox="0 0 120 120" fill="none"><ellipse cx="60" cy="65" rx="28" ry="26" fill="#059669" opacity="0.25"/></svg></div>
+                <div class="rec-name">Botella Hidratación</div>
+                <div class="rec-price">$29.000</div>
+                <button class="rec-add">+ Agregar</button>
+              </div>
+              <div class="rec-card">
+                <div class="rec-img" style="background:#f5f3f0;"><svg viewBox="0 0 120 120" fill="none"><rect x="20" y="30" width="80" height="60" rx="8" fill="#2d5a3d" opacity="0.3"/></svg></div>
+                <div class="rec-name">Chaqueta WindProof</div>
+                <div class="rec-price">$169.000</div>
+                <button class="rec-add">+ Agregar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="ann-badge h-valor" style="top:-10px;right:4px;" onclick="openPanel(7)">7</span>
+      </div>
+
+      <!-- ISSUE #10: Sin solicitud de reseña / NPS -->
+      <div class="annotated ann-valor" id="ann-target-10">
+        <div class="nps-ghost">⚠ Aquí debería ir: "¿Cómo fue tu experiencia? Deja tu reseña" — ausente</div>
+        <span class="ann-badge h-valor" style="top:-4px;right:4px;" onclick="openPanel(10)">10</span>
+      </div>
+
+      <!-- ISSUE #11: Sin programa de puntos / fidelización -->
+      <div class="annotated ann-valor" id="ann-target-11">
+        <div class="loyalty-ghost">⚠ Aquí debería ir: "Ganaste 438 puntos STRYDE con esta compra" — ausente</div>
+        <span class="ann-badge h-valor" style="top:-4px;right:4px;" onclick="openPanel(11)">11</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ISSUE #12: Footer completo con rutas de fuga en TYP -->
+<div class="annotated ann-distraccion" id="ann-target-12">
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div><div class="f-logo">STRYDE</div><p class="f-desc">Calzado y equipo técnico para runners.</p></div>
+        <div class="f-col"><h4>Tienda</h4><ul><li><a href="#">Running</a></li><li><a href="#">Trail</a></li><li><a href="#">Accesorios</a></li><li><a href="#">Outlet</a></li></ul></div>
+        <div class="f-col"><h4>Soporte</h4><ul><li><a href="#">Rastrear pedido</a></li><li><a href="#">Devoluciones</a></li><li><a href="#">FAQ</a></li><li><a href="#">Contacto</a></li></ul></div>
+        <div class="f-col"><h4>Empresa</h4><ul><li><a href="#">Sobre STRYDE</a></li><li><a href="#">Blog</a></li><li><a href="#">Términos</a></li><li><a href="#">Privacidad</a></li></ul></div>
+      </div>
+      <div class="footer-bottom"><span>© 2026 STRYDE. Todos los derechos reservados.</span><span>🇨🇴 Colombia · COP</span></div>
+    </div>
+  </footer>
+  <span class="ann-badge h-distraccion" style="top:16px;right:4px;" onclick="openPanel(12)">12</span>
+</div>
+
+<!-- ISSUE #8 annotation target -->
+<div class="annotated ann-friccion" id="ann-target-8" style="position:fixed;bottom:80px;right:28px;width:1px;height:1px;overflow:visible;">
+  <span class="ann-badge h-friccion" style="top:0;right:0;" onclick="openPanel(8)">8</span>
+</div>
+
+<script>
+const annotations = {
+  1:{heuristic:"Claridad",color:"#D97706",section:"Confirmación genérica — número de pedido ausente o poco visible",problema:"El título 'Gracias por tu compra' y el subtítulo 'Tu pedido ha sido recibido' son completamente genéricos. El número de pedido (#STR-2026-08847) aparece en gris claro como texto secundario dentro del resumen, no como elemento de referencia prominente. Si el usuario necesita reportar un problema, buscar el email de confirmación o contactar soporte, no tiene la referencia más básica a la vista.",hipotesis:"El número de pedido debe ser el elemento de mayor jerarquía tipográfica después del título, visible y copiable de inmediato: '#STR-2026-08847 · Copia'. Adicionalmente, el subtítulo debe ser más específico: 'Tu pedido #STR-2026-08847 está confirmado y en preparación.' La personalización del mensaje reduce la ansiedad post-compra.",severidad:2},
+  2:{heuristic:"Claridad",color:"#D97706",section:"Instrucción de email de confirmación poco prominente",problema:"'Recibirás un correo de confirmación' aparece en gris claro (#aaa) como nota al pie del header, con el mismo peso visual que un disclaimer. El email de confirmación es la principal herramienta del usuario para rastrear su pedido, acceder a la factura y gestionar devoluciones — pero la TYP no dirige activamente al usuario a revisarlo.",hipotesis:"Destacar la instrucción del email con ícono y dirección visible: '📧 Enviamos la confirmación a andres@correo.com'. Si el usuario no encuentra el email, guiarlo: 'Si no lo ves, revisa tu carpeta de spam.' Esta acción simple reduce los contactos al soporte por 'no encontré la confirmación'.",severidad:2},
+  3:{heuristic:"Claridad",color:"#D97706",section:"Resumen del pedido sin imagen de los productos comprados",problema:"Los ítems del resumen muestran nombre, atributos y precio en texto, pero sin imagen. Si el usuario compró dos o más productos, o si tiene dudas sobre si el artículo correcto fue incluido (talla, color), no puede verificarlo visualmente sin entrar a su historial de pedidos. La imagen es el ancla de confianza del resumen post-compra.",hipotesis:"Incluir thumbnail de 60px por ítem, correspondiente a la variante exacta comprada (color y diseño). Esto permite al usuario confirmar en 1 segundo que su pedido es correcto, reduciendo contactos al soporte por 'me llegó el producto equivocado' y aumentando la confianza post-compra.",severidad:2},
+  4:{heuristic:"Claridad",color:"#D97706",section:"Tracking sin fechas estimadas de despacho ni entrega",problema:"El estado del pedido muestra pasos ('Confirmado', 'En preparación', 'En camino', 'Entregado') sin ninguna fecha asociada a los pasos futuros. El usuario no sabe cuándo se va a despachar ni cuándo llegará. 'En proceso' y 'Pendiente' no son información accionable — son placeholders que generan ansiedad.",hipotesis:"Mostrar fechas estimadas en cada paso futuro: 'Despacho estimado: 15 abr' y 'Entrega estimada: 17–18 abr'. Si hay variabilidad, usar rangos: '3–5 días hábiles'. Una vez despachado, mostrar el número de tracking y link directo al courier. Estos datos reducen contactos de soporte por 'cuándo llega mi pedido' entre 30–50%.",severidad:3},
+  5:{heuristic:"Fricción",color:"#DC2626",section:"Dirección de entrega sin opción de corrección post-compra",problema:"La dirección de entrega se muestra como texto estático sin ninguna opción de edición. Si el usuario cometió un error (número de apartamento, ciudad incorrecta) o quiere cambiar el destino antes del despacho, no tiene ningún mecanismo visible para hacerlo. La única opción es contactar soporte, que es el camino más costoso para ambas partes.",hipotesis:"Agregar junto a la dirección: 'Corregir dirección →' que esté activo hasta que el pedido entre en estado 'En camino'. Al hacer clic, abrir un modal con el formulario de dirección pre-llenado. Esta función existe en la mayoría de los ecommerces maduros y reduce errores de entrega y reshipping.",severidad:2},
+  6:{heuristic:"Claridad",color:"#D97706",section:"Acciones post-compra con jerarquía visual plana — todo igual",problema:"Los 4 botones de acción ('Seguir comprando', 'Ver mis pedidos', 'Política de devoluciones', 'Contactar soporte') tienen exactamente el mismo estilo visual: mismo tamaño, mismo fondo, mismo peso. No hay señal de cuál es la acción más relevante para el momento post-compra. El usuario acaba de comprar — la acción más valiosa para STRYDE es que regrese pronto, no que lea la política de devoluciones.",hipotesis:"Establecer jerarquía: (1) CTA primario — 'Seguir comprando' o 'Ver ofertas para runners' en negro sólido. (2) CTA secundario — 'Ver mis pedidos' en outlined. (3) Links de texto — devoluciones y soporte sin el peso de un botón completo. La jerarquía visual dirige la atención hacia las acciones que generan valor para el negocio.",severidad:2},
+  7:{heuristic:"Propuesta de Valor",color:"#059669",section:"Recomendaciones post-compra sin relevancia contextual",problema:"La sección 'También te puede interesar' muestra 4 productos genéricos (gorra, medias, botella, chaqueta) sin ninguna relación con los ítems específicamente comprados. No hay lógica de 'complementa tu Running Pro V2', ni 'runners que compraron esto también llevaron'. La TYP es el momento de mayor intención de compra repetida — y se desperdicia con sugerencias aleatorias.",hipotesis:"El cross-sell debe ser 100% contextual: si compraron Running Pro V2 → mostrar plantillas para ese modelo, medias de la talla correcta, spray protector para esa tecnología de malla. Si compraron la mochila trail → mostrar accesorios de hidratación compatibles. La relevancia puede incrementar la tasa de conversión del cross-sell post-compra por 3–5x.",severidad:2},
+  8:{heuristic:"Fricción",color:"#DC2626",section:"Sin opción de añadir recordatorio de entrega al calendario",problema:"El usuario sabe que su pedido llegará en 3–5 días pero no tiene ningún mecanismo para recordarlo. Si está en el trabajo o de viaje el día de entrega, el paquete puede no ser recibido, generando intentos de re-entrega o devolución al origen. La TYP es el momento ideal para ofrecer este recordatorio.",hipotesis:"Junto al paso 'Entregado' del tracking: '+ Agregar al calendario' con opciones Google Calendar / Apple Calendar / iCal. Al hacer clic, crear evento con la fecha estimada de entrega y la dirección. Esta microinteracción reduce las no-entregas y mejora la experiencia post-compra sin costo significativo de desarrollo.",severidad:1},
+  9:{heuristic:"Propuesta de Valor",color:"#059669",section:"Sin mecanismo de referidos o compartir post-compra",problema:"El momento inmediatamente posterior a una compra es el de mayor satisfacción y predisposición positiva del cliente hacia la marca — es el mejor momento para solicitar una referencia. La TYP no tiene ningún mecanismo de referidos, sharing en redes, ni código de descuento para amigos. Una oportunidad de adquisición de bajo costo completamente desperdiciada.",hipotesis:"Sección de referidos en la TYP: 'Comparte STRYDE con un amigo y ambos ganan $10.000 en tu próximo pedido'. Con link personalizado copiable y botones de WhatsApp / Instagram. Los programas de referidos activados en el momento post-compra tienen CAC entre 3–7x menor que la publicidad pagada.",severidad:2},
+  10:{heuristic:"Propuesta de Valor",color:"#059669",section:"Sin solicitud de reseña o NPS post-compra",problema:"La TYP no solicita ningún tipo de feedback: ni NPS ('¿Qué tan probable es que recomiendes STRYDE?'), ni invitación a dejar una reseña del producto, ni rating de la experiencia de compra. El rating post-compra en sitio es uno de los principales factores de conversión para futuros compradores, y el momento de mayor disposición a dejarlo es justo después de completar el pedido.",hipotesis:"Agregar en la TYP una solicitud de NPS de 1 pregunta: '¿Qué tan probable es que recomiendes STRYDE a un amigo? (0–10)'. Para reseñas del producto, enviar email de solicitud a los 7 días de la entrega estimada. El NPS en TYP tiene tasas de respuesta entre 20–40%, mucho mayores que los emails post-compra.",severidad:2},
+  11:{heuristic:"Propuesta de Valor",color:"#059669",section:"Sin comunicación de puntos ganados o programa de fidelización",problema:"Si STRYDE tiene o planea un programa de fidelización, la TYP es el momento más impactante para comunicarlo. 'Ganaste 438 puntos STRYDE con esta compra' transforma una transacción cerrada en el inicio de una relación de largo plazo. La ausencia de esta comunicación deja invisible uno de los principales drivers de retención.",hipotesis:"Si existe programa de puntos: mostrar en la TYP los puntos ganados, el total acumulado y cuánto falta para el próximo beneficio. Si no existe aún: la TYP puede ser el lugar de lanzamiento de un programa básico de cashback. Los programas de fidelización comunicados en el momento post-compra tienen las mayores tasas de adhesión.",severidad:2},
+  12:{heuristic:"Distracción",color:"#7C3AED",section:"Footer completo con rutas de fuga en la Thank You Page",problema:"El footer tiene 4 columnas con 16+ links: tienda, soporte, empresa, legal. En una TYP cuyo objetivo es cerrar positivamente la experiencia y activar retención, cada link es una distracción del mensaje central. El usuario que acaba de comprar no necesita navegar a 'Sobre STRYDE' o 'Blog'.",hipotesis:"Reemplazar el footer completo por un footer mínimo: logo + copyright + links de privacidad/términos. Si se quiere mantener algo útil: solo los links de soporte post-compra ('Rastrear pedido', 'Devoluciones', 'Contacto'). Todo lo demás puede esperar al email de confirmación o al próximo ciclo de navegación.",severidad:1}
+};
+
+let annotationsActive=false,currentAnn=1;
+function toggleAnnotations(){
+  annotationsActive=!annotationsActive;
+  document.body.classList.toggle('annotations-on',annotationsActive);
+  const btn=document.getElementById('toggle-btn');
+  btn.classList.toggle('on',annotationsActive);
+  btn.innerHTML=`<div class="t-dot"></div> ${annotationsActive?'Ocultar anotaciones':'Ver anotaciones'}`;
+  // show issue 2 badge manually
+  document.getElementById('ann-target-2').style.display=annotationsActive?'block':'none';
+}
+function openPanel(num){
+  currentAnn=num;const d=annotations[num];
+  document.getElementById('p-num').textContent='#'+num;
+  const chip=document.getElementById('p-chip');chip.textContent=d.heuristic;chip.style.background=d.color;
+  document.getElementById('p-section').textContent=d.section;
+  document.getElementById('p-problema').textContent=d.problema;
+  document.getElementById('p-hipotesis').textContent=d.hipotesis;
+  const sevDiv=document.getElementById('p-sev');sevDiv.innerHTML='';
+  for(let i=1;i<=3;i++){const pip=document.createElement('div');pip.className='sev-pip';pip.style.background=i<=d.severidad?d.color:'#eee';sevDiv.appendChild(pip);}
+  sevDiv.insertAdjacentHTML('beforeend',`<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`);
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePanel(){
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+function nav(dir){
+  const keys=Object.keys(annotations).map(Number);
+  let idx=keys.indexOf(currentAnn)+dir;
+  if(idx<0)idx=keys.length-1;if(idx>=keys.length)idx=0;
+  openPanel(keys[idx]);
+}
+</script>
+</body>
+</html>
