@@ -3,144 +3,345 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Heuristic Labs - Gumroad Style</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<title>Heuristic Labs — Análisis ResearchXL</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-:root {
---black: #000000;
---white: #ffffff;
---bg: #f4f4f0;
---mobile-color: #b1e5fc;
---desktop-color: #ff90e8;
---pdf-color: #ffd900;
---border: 2px solid #000;
-}
-body {
-font-family: 'Inter', sans-serif;
-background-color: var(--bg);
-margin: 0;
-padding: 40px 20px;
-}
-.container {
-max-width: 1100px;
-margin: 0 auto;
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-gap: 40px;
-}
-header { text-align: center; margin-bottom: 50px; }
-h1 { font-weight: 900; font-size: 3rem; text-transform: uppercase; margin: 0; }
-/* Tarjeta Principal */
-.lab-card {
-background: var(--white);
-border: var(--border);
-box-shadow: 10px 10px 0px var(--black);
-display: flex;
-flex-direction: column;
-}
-.lab-header {
-padding: 20px;
-border-bottom: var(--border);
-background: #eee;
-}
-.lab-title { font-size: 1.8rem; margin: 0; font-weight: 900; }
-/* Secciones de Versión */
-.version-section {
-padding: 20px;
-border-bottom: var(--border);
-}
-.version-section:last-child { border-bottom: none; }
-.version-label {
-display: inline-block;
-padding: 4px 10px;
-border: var(--border);
-font-weight: 900;
-font-size: 0.8rem;
-text-transform: uppercase;
-margin-bottom: 15px;
-}
-.mobile-label { background: var(--mobile-color); }
-.desktop-label { background: var(--desktop-color); }
-/* Botones */
-.btn-group {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 10px;
-}
-.btn {
-text-decoration: none;
-color: var(--black);
-font-weight: 700;
-font-size: 0.9rem;
-padding: 12px 5px;
-text-align: center;
-border: var(--border);
-background: var(--white);
-box-shadow: 4px 4px 0px var(--black);
-transition: 0.1s;
-}
-.btn:active {
-transform: translate(2px, 2px);
-box-shadow: 2px 2px 0px var(--black);
-}
-.btn-view { background: var(--black); color: white; }
-.btn-pdf { background: var(--pdf-color); }
-p.desc { font-size: 0.9rem; margin-bottom: 15px; line-height: 1.4; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--black:#000;--white:#fff;--bg:#f4f4f0;--border:2px solid #000;}
+body{font-family:'Inter',sans-serif;background:var(--bg);padding:48px 24px 80px;}
+
+/* HEADER */
+header{text-align:center;margin-bottom:56px;max-width:720px;margin-left:auto;margin-right:auto;}
+.eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:#000;color:#fff;padding:4px 14px;margin-bottom:16px;}
+h1{font-weight:900;font-size:clamp(2rem,5vw,3.5rem);text-transform:uppercase;letter-spacing:-1px;line-height:1;margin-bottom:14px;}
+.header-sub{font-size:15px;color:#555;line-height:1.6;max-width:520px;margin:0 auto 24px;}
+.header-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+.stat{font-size:12px;font-weight:700;background:#fff;border:var(--border);padding:5px 12px;box-shadow:3px 3px 0 #000;}
+
+/* GRID */
+.container{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:32px;}
+
+/* CARD */
+.lab-card{background:#fff;border:var(--border);box-shadow:8px 8px 0 #000;display:flex;flex-direction:column;transition:transform 0.1s,box-shadow 0.1s;}
+.lab-card:hover{transform:translate(-2px,-2px);box-shadow:10px 10px 0 #000;}
+
+.lab-header{padding:20px 20px 16px;border-bottom:var(--border);background:#eee;}
+.lab-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.lab-title{font-size:1.55rem;font-weight:900;text-transform:uppercase;line-height:1.1;}
+.lab-badge{font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border:var(--border);padding:3px 8px;white-space:nowrap;flex-shrink:0;}
+.badge-stryde{background:#ffd166;}
+.badge-kova{background:#a8dadc;}
+.badge-aero{background:#b7e4c7;}
+.lab-meta{display:flex;gap:6px;flex-wrap:wrap;}
+.meta-tag{font-size:11px;font-weight:600;color:#555;background:#f0f0f0;border:1px solid #ddd;padding:2px 7px;}
+
+/* VERSION SECTION */
+.version-section{padding:16px 20px;border-bottom:var(--border);}
+.version-section:last-child{border-bottom:none;}
+.version-label{display:inline-block;padding:3px 10px;border:var(--border);font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:9px;}
+.mobile-label{background:#b1e5fc;}
+.desktop-label{background:#ff90e8;}
+.version-desc{font-size:12px;color:#555;line-height:1.5;margin-bottom:10px;}
+.issues-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.pips{display:flex;gap:2px;flex-wrap:wrap;}
+.pip{width:7px;height:7px;border-radius:50%;}
+.issues-text{font-size:11px;font-weight:700;color:#333;}
+.btn{display:block;text-decoration:none;color:#000;font-weight:700;font-size:13px;padding:11px 16px;text-align:center;border:var(--border);background:#fff;box-shadow:4px 4px 0 #000;transition:transform 0.1s,box-shadow 0.1s;}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #000;}
+.btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
+.btn-view{background:#000;color:#fff;}
+
+/* FOOTER */
+footer{text-align:center;margin-top:64px;font-size:12px;color:#888;}
 </style>
 </head>
 <body>
+
 <header>
-<h1>Heuristic Labs</h1>
-<p>Selecciona una plataforma para ver el análisis detallado.</p>
+  <div class="eyebrow">Metodología ResearchXL</div>
+  <h1>Heuristic Labs</h1>
+  <p class="header-sub">Laboratorios de análisis heurístico con problemas intencionales para entrenamiento en CRO y experiencia de usuario.</p>
+  <div class="header-stats">
+    <div class="stat">🔬 6 tipos de página</div>
+    <div class="stat">📱 6 versiones mobile</div>
+    <div class="stat">🖥 6 versiones desktop</div>
+    <div class="stat">⚠️ 76+ issues documentados</div>
+  </div>
 </header>
+
 <div class="container">
 
-  <!-- Tarjeta E-commerce -->
+  <!-- 1. E-COMMERCE FLOW -->
   <article class="lab-card">
     <div class="lab-header">
-      <h2 class="lab-title">E-commerce Flow</h2>
+      <div class="lab-header-top">
+        <h2 class="lab-title">E-commerce Flow</h2>
+        <span class="lab-badge badge-stryde">STRYDE</span>
+      </div>
+      <div class="lab-meta">
+        <span class="meta-tag">Running</span>
+        <span class="meta-tag">PDP · Ficha de producto</span>
+      </div>
     </div>
     <div class="version-section">
       <span class="version-label mobile-label">Versión Mobile</span>
-      <p class="desc">Análisis de pulgares, microinteracciones y gestos táctiles en el carrito.</p>
-      <div class="btn-group">
-        <a href="ecommerce-mobile.html" class="btn btn-view">Ver Lab</a>
-        <a href="guia-mobile-1.pdf" class="btn btn-pdf" download>Guía PDF</a>
+      <p class="version-desc">Pulgares, microinteracciones y gestos táctiles en la ficha de producto.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#D97706"></div>
+        </div>
+        <span class="issues-text">8 issues</span>
       </div>
+      <a href="ecommerce-mobile.html" class="btn btn-view">Ver laboratorio →</a>
     </div>
     <div class="version-section">
       <span class="version-label desktop-label">Versión Desktop</span>
-      <p class="desc">Foco en hover states, F-pattern y eficiencia de teclado en pantallas grandes.</p>
-      <div class="btn-group">
-        <a href="ecommerce-desktop.html" class="btn btn-view">Ver Lab</a>
-        <a href="guia-desktop-1.pdf" class="btn btn-pdf" download>Guía PDF</a>
+      <p class="version-desc">Hover states, F-pattern y eficiencia de navegación en pantallas grandes.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#D97706"></div>
+        </div>
+        <span class="issues-text">8 issues</span>
       </div>
+      <a href="ecommerce-desktop.html" class="btn btn-view">Ver laboratorio →</a>
     </div>
   </article>
 
-  <!-- Tarjeta Lead Gen -->
+  <!-- 2. LEAD GEN FLOW -->
   <article class="lab-card">
     <div class="lab-header">
-      <h2 class="lab-title">Lead Gen Flow</h2>
+      <div class="lab-header-top">
+        <h2 class="lab-title">Lead Gen Flow</h2>
+        <span class="lab-badge badge-kova">KOVA</span>
+      </div>
+      <div class="lab-meta">
+        <span class="meta-tag">SaaS · Lead Gen</span>
+        <span class="meta-tag">Landing · Formulario</span>
+      </div>
     </div>
     <div class="version-section">
       <span class="version-label mobile-label">Versión Mobile</span>
-      <p class="desc">Análisis de formularios, fricción en campos y jerarquía de CTAs en pantallas pequeñas.</p>
-      <div class="btn-group">
-        <a href="leads-mobile.html" class="btn btn-view">Ver Lab</a>
-        <a href="guia-leads-mobile.pdf" class="btn btn-pdf" download>Guía PDF</a>
+      <p class="version-desc">Fricción en campos de formulario, jerarquía de CTAs y accesibilidad táctil.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#D97706"></div>
+        </div>
+        <span class="issues-text">8 issues</span>
       </div>
+      <a href="leads-mobile.html" class="btn btn-view">Ver laboratorio →</a>
     </div>
     <div class="version-section">
       <span class="version-label desktop-label">Versión Desktop</span>
-      <p class="desc">Foco en longitud de formulario, prueba social y rutas de fuga en landing pages.</p>
-      <div class="btn-group">
-        <a href="leads-desktop.html" class="btn btn-view">Ver Lab</a>
-        <a href="guia-leads-desktop.pdf" class="btn btn-pdf" download>Guía PDF</a>
+      <p class="version-desc">Longitud de formulario, prueba social y rutas de fuga en landing pages.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#D97706"></div>
+        </div>
+        <span class="issues-text">8 issues</span>
       </div>
+      <a href="leads-desktop.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+  </article>
+
+  <!-- 3. PLP -->
+  <article class="lab-card">
+    <div class="lab-header">
+      <div class="lab-header-top">
+        <h2 class="lab-title">Product List Page</h2>
+        <span class="lab-badge badge-stryde">STRYDE</span>
+      </div>
+      <div class="lab-meta">
+        <span class="meta-tag">Running</span>
+        <span class="meta-tag">Listado de productos</span>
+      </div>
+    </div>
+    <div class="version-section">
+      <span class="version-label mobile-label">Versión Mobile</span>
+      <p class="version-desc">Filtros en bottom sheet, grid 2 columnas, chips activos ausentes y quick-add táctil.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#7C3AED"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+        </div>
+        <span class="issues-text">10 issues · 6 mobile-específicos</span>
+      </div>
+      <a href="plp-mobile.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+    <div class="version-section">
+      <span class="version-label desktop-label">Versión Desktop</span>
+      <p class="version-desc">Sidebar de filtros colapsados, ordenamiento opaco, hover ausente y paginación numérica.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#7C3AED"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+        </div>
+        <span class="issues-text">10 issues</span>
+      </div>
+      <a href="plp-desktop.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+  </article>
+
+  <!-- 4. HOMEPAGE -->
+  <article class="lab-card">
+    <div class="lab-header">
+      <div class="lab-header-top">
+        <h2 class="lab-title">Homepage</h2>
+        <span class="lab-badge badge-aero">AERO</span>
+      </div>
+      <div class="lab-meta">
+        <span class="meta-tag">Outdoor · Aventura</span>
+        <span class="meta-tag">Página de inicio</span>
+      </div>
+    </div>
+    <div class="version-section">
+      <span class="version-label mobile-label">Versión Mobile</span>
+      <p class="version-desc">Hero con CTA bajo el fold, carousel en mobile, social proof invisible y footer sin acordeón.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+        </div>
+        <span class="issues-text">12 issues · 8 mobile-específicos</span>
+      </div>
+      <a href="homepage-mobile.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+    <div class="version-section">
+      <span class="version-label desktop-label">Versión Desktop</span>
+      <p class="version-desc">Headline genérico, carousel sin controles, value props planas y social proof fuera del fold.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+        </div>
+        <span class="issues-text">12 issues</span>
+      </div>
+      <a href="homepage-desktop.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+  </article>
+
+  <!-- 5. LANDING PAGE WEBINAR -->
+  <article class="lab-card">
+    <div class="lab-header">
+      <div class="lab-header-top">
+        <h2 class="lab-title">Landing de Campaña</h2>
+        <span class="lab-badge badge-stryde">STRYDE</span>
+      </div>
+      <div class="lab-meta">
+        <span class="meta-tag">Running</span>
+        <span class="meta-tag">Registro a webinar</span>
+      </div>
+    </div>
+    <div class="version-section">
+      <span class="version-label mobile-label">Versión Mobile</span>
+      <p class="version-desc">CTA bajo el fold, formulario de 7 campos, nav con rutas de fuga y ausencia de prueba social.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#7C3AED"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+        </div>
+        <span class="issues-text">12 issues · 6 mobile-específicos</span>
+      </div>
+      <a href="lp-webinar-mobile.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+    <div class="version-section">
+      <span class="version-label desktop-label">Versión Desktop</span>
+      <p class="version-desc">Headline vago, ponente sin credenciales, formulario excesivo y urgencia de cupos ausente.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#7C3AED"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+        </div>
+        <span class="issues-text">12 issues</span>
+      </div>
+      <a href="lp-webinar-desktop.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+  </article>
+
+  <!-- 6. BOLSA / CARRITO -->
+  <article class="lab-card">
+    <div class="lab-header">
+      <div class="lab-header-top">
+        <h2 class="lab-title">Bolsa / Carrito</h2>
+        <span class="lab-badge badge-stryde">STRYDE</span>
+      </div>
+      <div class="lab-meta">
+        <span class="meta-tag">Running</span>
+        <span class="meta-tag">Carrito de compra</span>
+      </div>
+    </div>
+    <div class="version-section">
+      <span class="version-label mobile-label">Versión Mobile</span>
+      <p class="version-desc">Sin imágenes, envío oculto, botón eliminar con tap accidental y sticky CTA sin seguridad.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#DC2626"></div>
+        </div>
+        <span class="issues-text">12 issues · 5 mobile-específicos</span>
+      </div>
+      <a href="cart-mobile.html" class="btn btn-view">Ver laboratorio →</a>
+    </div>
+    <div class="version-section">
+      <span class="version-label desktop-label">Versión Desktop</span>
+      <p class="version-desc">Sin imágenes, costo de envío oculto, cupón prominente y cross-sell sin relevancia contextual.</p>
+      <div class="issues-row">
+        <div class="pips">
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#DC2626"></div><div class="pip" style="background:#DC2626"></div>
+          <div class="pip" style="background:#7C3AED"></div><div class="pip" style="background:#D97706"></div>
+          <div class="pip" style="background:#D97706"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#059669"></div>
+          <div class="pip" style="background:#059669"></div><div class="pip" style="background:#DC2626"></div>
+        </div>
+        <span class="issues-text">12 issues</span>
+      </div>
+      <a href="cart-desktop.html" class="btn btn-view">Ver laboratorio →</a>
     </div>
   </article>
 
 </div>
+
+<footer>
+  <p>Laboratorios heurísticos · Metodología ResearchXL · Uso educativo interno</p>
+</footer>
+
 </body>
 </html>
