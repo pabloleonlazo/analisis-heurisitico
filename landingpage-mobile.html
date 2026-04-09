@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Heurístico Mobile — Landing Page Webinar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#111;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px 140px;color:#1a1a1a;}
+
+/* ─── ANNOTATION SYSTEM ─────────────────────────────────────── */
+.annotated{position:relative;}
+.ann-badge{display:none;position:absolute;z-index:200;width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:800;color:#fff;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.35);border:2px solid rgba(255,255,255,0.95);transition:transform 0.15s;top:-8px;right:-8px;}
+.ann-badge:hover{transform:scale(1.25);}
+.ann-badge.active-badge{transform:scale(1.3);box-shadow:0 0 0 3px rgba(255,255,255,0.4);}
+.annotations-on .ann-badge{display:flex;}
+.annotations-on .annotated{outline:2px dashed;outline-offset:1px;border-radius:2px;}
+.h-friccion{background:#DC2626;} .h-distraccion{background:#7C3AED;} .h-claridad{background:#D97706;} .h-valor{background:#059669;}
+.ann-friccion{outline-color:rgba(220,38,38,0.25)!important;} .ann-distraccion{outline-color:rgba(124,58,237,0.25)!important;} .ann-claridad{outline-color:rgba(217,119,6,0.25)!important;} .ann-valor{outline-color:rgba(5,150,105,0.25)!important;}
+
+/* ─── PANEL ─────────────────────────────────────────────────── */
+#ann-panel{position:fixed;top:0;right:-440px;width:420px;height:100vh;background:#fff;border-left:1px solid #e8e8e8;z-index:2000;transition:right 0.3s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,0.15);}
+#ann-panel.open{right:0;}
+#panel-header{padding:20px 20px 16px;border-bottom:1px solid #f2f2f2;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;}
+#panel-header h3{font-size:11px;font-weight:700;color:#bbb;letter-spacing:0.1em;text-transform:uppercase;}
+#close-panel{cursor:pointer;width:32px;height:32px;border-radius:50%;background:#f5f5f5;border:none;display:flex;align-items:center;justify-content:center;font-size:18px;color:#555;}
+#close-panel:hover{background:#ebebeb;}
+#panel-body{padding:24px 20px;flex:1;}
+.panel-num{font-size:48px;font-weight:200;color:#e8e8e8;line-height:1;}
+.panel-heuristic-chip{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;margin-bottom:12px;}
+.panel-mobile-badge{display:inline-flex;align-items:center;gap:4px;background:#f0f9ff;color:#0369A1;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:10px;margin-left:6px;vertical-align:middle;}
+.panel-section-title{font-size:19px;font-weight:600;color:#111;margin-bottom:18px;line-height:1.3;}
+.panel-lbl{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#bbb;margin-bottom:6px;margin-top:18px;}
+.panel-text{font-size:14px;line-height:1.7;color:#444;}
+.panel-mobile-only{margin-top:16px;padding:12px 14px;background:#f0f9ff;border-radius:8px;border-left:3px solid #0369A1;font-size:13px;line-height:1.6;color:#334;}
+.panel-mobile-only strong{display:block;font-size:11px;font-weight:700;color:#0369A1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+.sev-row{display:flex;align-items:center;gap:4px;margin-top:6px;}
+.sev-pip{width:28px;height:7px;border-radius:4px;}
+#panel-footer{display:flex;gap:8px;padding:16px 20px;border-top:1px solid #f2f2f2;position:sticky;bottom:0;background:#fff;}
+#panel-footer button{flex:1;padding:9px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;font-size:13px;cursor:pointer;color:#555;font-family:'DM Sans',sans-serif;}
+#panel-footer button:hover{background:#f8f8f8;}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:1900;}
+#overlay.show{display:block;}
+
+/* ─── TOOLBAR ───────────────────────────────────────────────── */
+#lab-toolbar{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1c1c1e;border-radius:40px;padding:10px 22px;display:flex;align-items:center;gap:14px;z-index:800;box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.07);white-space:nowrap;}
+.tb-label{font-size:11px;color:#666;font-weight:600;letter-spacing:0.06em;}
+.tb-sep{width:1px;height:18px;background:#333;}
+#toggle-btn{display:flex;align-items:center;gap:8px;background:#2c2c2e;border:1px solid #3a3a3c;border-radius:24px;padding:7px 16px;cursor:pointer;color:#fff;font-size:13px;font-weight:500;transition:all 0.2s;font-family:'DM Sans',sans-serif;}
+#toggle-btn:hover{background:#3a3a3c;}
+#toggle-btn.on{background:#5B21B6;border-color:#7C3AED;}
+.t-dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background 0.2s;}
+#toggle-btn.on .t-dot{background:#c4b5fd;}
+
+/* ─── SIDEBAR ───────────────────────────────────────────────── */
+.issues-sidebar{width:260px;flex-shrink:0;display:none;}
+.issues-sidebar.visible{display:block;}
+.sidebar-title{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:14px;}
+.issue-chip{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:#1c1c1e;margin-bottom:6px;cursor:pointer;transition:background 0.15s;border:1px solid #2a2a2a;}
+.issue-chip:hover{background:#252525;border-color:#3a3a3a;}
+.issue-chip.mobile-specific{border-left:2px solid #0369A1;}
+.chip-num{width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.chip-heuristic{font-size:10px;color:#888;font-weight:600;letter-spacing:0.04em;margin-bottom:2px;}
+.chip-section{font-size:12px;font-weight:500;color:#ddd;line-height:1.3;}
+.chip-mobile-label{font-size:9px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;}
+
+/* ─── PAGE HEADER ───────────────────────────────────────────── */
+.lab-header{text-align:center;margin-bottom:36px;}
+.lab-eyebrow{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#666;font-weight:600;margin-bottom:10px;}
+.lab-header h1{font-size:26px;font-weight:600;color:#fff;margin-bottom:8px;}
+.lab-header p{font-size:13px;color:#888;max-width:420px;line-height:1.6;}
+.legend-bar{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:36px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;font-weight:500;}
+.leg-dot{width:9px;height:9px;border-radius:50%;}
+
+/* ─── PHONE ─────────────────────────────────────────────────── */
+.phone-scene{position:relative;display:flex;gap:32px;align-items:flex-start;justify-content:center;width:100%;max-width:880px;}
+.phone-wrapper{position:relative;flex-shrink:0;}
+.phone-frame{width:390px;height:820px;background:#0a0a0a;border-radius:52px;padding:14px;box-shadow:0 0 0 1px #333,0 0 0 3px #1a1a1a,0 40px 80px rgba(0,0,0,0.6),inset 0 0 0 1px #2a2a2a;position:relative;}
+.phone-frame::before{content:'';position:absolute;left:-4px;top:120px;width:4px;height:36px;background:#2a2a2a;border-radius:2px 0 0 2px;box-shadow:0 52px 0 #2a2a2a,0 96px 0 #2a2a2a;}
+.phone-frame::after{content:'';position:absolute;right:-4px;top:160px;width:4px;height:68px;background:#2a2a2a;border-radius:0 2px 2px 0;}
+.phone-inner{width:100%;height:100%;background:#f8f7f5;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+.status-bar{background:#1a1a1a;padding:14px 24px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10;}
+.status-time{font-size:15px;font-weight:600;color:#fff;}
+.status-icons{display:flex;gap:5px;align-items:center;font-size:12px;color:#fff;}
+.dynamic-island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#0a0a0a;border-radius:20px;z-index:20;}
+.phone-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.phone-scroll::-webkit-scrollbar{display:none;}
+
+/* ─── LP MOBILE CONTENT ─────────────────────────────────────── */
+
+/* ISSUE #7: Nav completo — rutas de fuga en LP */
+.m-nav{background:#fff;border-bottom:1px solid #f0f0f0;padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.m-logo{font-family:'DM Serif Display',serif;font-size:20px;}
+.m-nav-icons{display:flex;gap:12px;}
+.m-icon-btn{background:none;border:none;cursor:pointer;font-size:20px;padding:4px;position:relative;}
+.m-cart-dot{position:absolute;top:0;right:0;width:8px;height:8px;background:#DC2626;border-radius:50%;border:1px solid #fff;}
+
+/* ISSUE #2: Hero — CTA debajo del fold en mobile */
+.m-hero{background:linear-gradient(145deg,#111 0%,#1a2a1a 100%);padding:28px 20px 24px;}
+.m-hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);color:#86efac;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:14px;}
+.m-hero-badge span{width:6px;height:6px;border-radius:50%;background:#EF4444;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* ISSUE #1: Headline genérico */
+.m-hero-title{font-family:'DM Serif Display',serif;font-size:32px;line-height:1.1;color:#fff;margin-bottom:10px;}
+/* ISSUE #2: Subtítulo vago */
+.m-hero-sub{font-size:14px;color:rgba(255,255,255,0.55);line-height:1.5;margin-bottom:20px;}
+/* ISSUE #3: Fecha sin zona horaria */
+.m-hero-meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
+.m-meta-pill{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,0.8);font-weight:500;}
+/* ISSUE #2: CTA demasiado abajo — en mobile ya está casi fuera del primer viewport -->
+.m-hero-cta{display:block;width:100%;padding:14px;background:#fff;color:#1a1a1a;border:none;border-radius:10px;font-size:15px;font-weight:700;text-align:center;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;}
+.m-hero-sub2{font-size:11px;color:rgba(255,255,255,0.35);text-align:center;}
+
+/* ISSUE #10: Sin urgencia de cupos (ghost) */
+.m-spots-ghost{display:none;background:rgba(220,38,38,0.08);border:1.5px dashed #DC2626;border-radius:8px;padding:9px 14px;margin:0 16px 0;font-size:10px;color:#DC2626;font-weight:700;text-align:center;}
+.annotations-on .m-spots-ghost{display:block;}
+
+/* ISSUE #6: Beneficios sin jerarquía */
+.m-section{padding:20px 16px;}
+.m-section-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;margin-bottom:12px;}
+.m-benefit-list{display:flex;flex-direction:column;gap:8px;}
+.m-benefit{display:flex;align-items:flex-start;gap:10px;padding:12px;background:#fff;border-radius:8px;border:1px solid #f0f0f0;}
+.m-benefit-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.m-benefit-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:1px;}
+.m-benefit-sub{font-size:11px;color:#aaa;line-height:1.3;}
+
+/* ISSUE #5: Ponente sin credenciales */
+.m-speaker{display:flex;align-items:flex-start;gap:12px;padding:16px;background:#fff;border-radius:10px;border:1px solid #f0f0f0;}
+.m-speaker-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#c0c0c0,#e0e0e0);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.m-speaker-name{font-size:14px;font-weight:600;margin-bottom:2px;}
+.m-speaker-role{font-size:12px;color:#888;margin-bottom:4px;}
+.m-speaker-bio{font-size:12px;color:#666;line-height:1.4;}
+
+/* ISSUE #12: Sin social proof */
+.m-proof-empty{background:#fff;border-radius:10px;border:1px solid #f0f0f0;padding:20px;text-align:center;color:#ccc;font-size:12px;font-style:italic;}
+
+/* ISSUE #8: Formulario en mobile — sección form -->
+.m-form-section{padding:20px 16px;background:#fff;margin-top:8px;}
+.m-form-title{font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:4px;}
+.m-form-sub{font-size:12px;color:#888;margin-bottom:16px;line-height:1.4;}
+.m-form-group{margin-bottom:12px;}
+.m-form-label{font-size:12px;font-weight:600;color:#555;margin-bottom:5px;display:block;}
+.m-form-label .req{color:#DC2626;}
+.m-form-input{width:100%;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;font-size:16px;font-family:'DM Sans',sans-serif;color:#1a1a1a;outline:none;}
+/* font-size:16px para evitar zoom en iOS */
+.m-form-input::placeholder{color:#bbb;font-size:14px;}
+.m-form-select{width:100%;padding:12px 14px;border:1px solid #e0e0e0;border-radius:8px;font-size:16px;font-family:'DM Sans',sans-serif;color:#1a1a1a;background:#fff;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.m-form-checkbox{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;}
+.m-form-checkbox input{margin-top:3px;width:18px;height:18px;flex-shrink:0;}
+.m-form-checkbox label{font-size:12px;color:#888;line-height:1.5;}
+
+/* ISSUE #4: CTA genérico */
+.m-form-cta{width:100%;padding:15px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;}
+
+/* ISSUE #9: Sin política de privacidad cerca del form */
+.m-form-disclaimer{font-size:11px;color:#bbb;text-align:center;line-height:1.4;}
+
+/* ISSUE #11: Calendar ghost -->
+.m-cal-ghost{display:none;background:rgba(5,150,105,0.06);border:1.5px dashed #059669;border-radius:8px;padding:9px 14px;margin-top:10px;font-size:10px;color:#059669;font-weight:700;text-align:center;}
+.annotations-on .m-cal-ghost{display:block;}
+
+/* Sticky CTA bar — visible con anotaciones ghost -->
+.m-sticky-cta-ghost{display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(220,38,38,0.06);border-top:2px dashed #DC2626;padding:8px 16px;font-size:10px;color:#DC2626;font-weight:700;letter-spacing:0.04em;text-align:center;z-index:50;}
+
+/* Bottom nav no relevante para LP — se omite intencionalmente (es una mejora) -->
+</style>
+</head>
+<body>
+<div id="overlay" onclick="closePanel()"></div>
+
+<!-- PANEL -->
+<div id="ann-panel">
+  <div id="panel-header"><h3>Issue heurístico</h3><button id="close-panel" onclick="closePanel()">×</button></div>
+  <div id="panel-body">
+    <div class="panel-num" id="p-num">#1</div>
+    <div id="p-chip" class="panel-heuristic-chip"></div><span id="p-mobile-badge" class="panel-mobile-badge" style="display:none">📱 Mobile específico</span>
+    <div class="panel-section-title" id="p-section"></div>
+    <div class="panel-lbl">Problema identificado</div>
+    <div class="panel-text" id="p-problema"></div>
+    <div class="panel-lbl">Hipótesis de mejora</div>
+    <div class="panel-text" id="p-hipotesis"></div>
+    <div id="p-mobile-note" class="panel-mobile-only" style="display:none">
+      <strong>Por qué es más crítico en mobile</strong>
+      <span id="p-mobile-note-text"></span>
+    </div>
+    <div class="panel-lbl">Severidad</div>
+    <div class="sev-row" id="p-sev"></div>
+  </div>
+  <div id="panel-footer">
+    <button onclick="nav(-1)">← Anterior</button>
+    <button onclick="nav(1)">Siguiente →</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="lab-header">
+  <div class="lab-eyebrow">🔬 Laboratorio ResearchXL</div>
+  <h1>Análisis heurístico — Landing Page Webinar Mobile</h1>
+  <p>Landing ficticia (STRYDE · Webinar Running) con 12 problemas heurísticos intencionales. Activa las anotaciones para explorarlos.</p>
+</div>
+<div class="legend-bar">
+  <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>Fricción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#7C3AED"></div>Distracción</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#D97706"></div>Claridad</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#059669"></div>Prop. de Valor</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#0369A1"></div><span>📱 Mobile específico</span></div>
+</div>
+
+<!-- SCENE -->
+<div class="phone-scene">
+  <div class="issues-sidebar" id="issues-sidebar"><div class="sidebar-title">Issues detectados</div></div>
+
+  <div class="phone-wrapper">
+    <div class="phone-frame">
+      <div class="phone-inner">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="dynamic-island"></div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="phone-scroll">
+
+          <!-- ISSUE #7: Nav completo con rutas de fuga -->
+          <div class="annotated ann-distraccion" id="ann-target-7">
+            <div class="m-nav">
+              <!-- ISSUE #11: Logo linkeable -->
+              <div class="annotated ann-distraccion" id="ann-target-11" style="outline:none!important;">
+                <a href="#" style="text-decoration:none;color:inherit;"><div class="m-logo">STRYDE</div></a>
+                <span class="ann-badge h-distraccion" style="top:50%;right:-28px;transform:translateY(-50%);" onclick="openPanel(11)">11</span>
+              </div>
+              <div class="m-nav-icons">
+                <button class="m-icon-btn">🔍</button>
+                <button class="m-icon-btn">🛒<span class="m-cart-dot"></span></button>
+              </div>
+            </div>
+            <span class="ann-badge h-distraccion" style="top:8px;right:4px;" onclick="openPanel(7)">7</span>
+          </div>
+
+          <!-- HERO: issues #1 #2 #3 -->
+          <div class="annotated ann-claridad" id="ann-target-1">
+            <div class="annotated ann-friccion" id="ann-target-2" style="outline:none!important;">
+              <div class="annotated ann-claridad" id="ann-target-3" style="outline:none!important;">
+                <div class="m-hero">
+                  <div class="m-hero-badge"><span></span>Webinar gratuito · 14 mayo 2026</div>
+                  <!-- ISSUE #1: headline genérico -->
+                  <h1 class="m-hero-title">Corre mejor.<br>Entrena con propósito.</h1>
+                  <!-- subtítulo genérico -->
+                  <p class="m-hero-sub">Únete a nuestra sesión en vivo y descubre cómo llevar tu entrenamiento al siguiente nivel.</p>
+                  <!-- ISSUE #3: hora sin zona horaria -->
+                  <div class="m-hero-meta">
+                    <div class="m-meta-pill">📅 14 de mayo</div>
+                    <div class="m-meta-pill">🕖 7:00 PM</div>
+                    <div class="m-meta-pill">⏱ 90 min</div>
+                    <div class="m-meta-pill">💻 Zoom</div>
+                  </div>
+                  <!-- ISSUE #2: CTA al final del hero — casi fuera del viewport en mobile -->
+                  <button class="m-hero-cta">Registrarse</button>
+                  <div class="m-hero-sub2">Acceso gratuito · Cupos limitados</div>
+                </div>
+                <span class="ann-badge h-claridad" style="top:8px;right:30px;" onclick="openPanel(3)">3</span>
+              </div>
+              <span class="ann-badge h-friccion" style="top:8px;right:8px;" onclick="openPanel(2)">2</span>
+            </div>
+            <span class="ann-badge h-claridad" style="top:30px;left:8px;right:auto;" onclick="openPanel(1)">1</span>
+          </div>
+
+          <!-- ISSUE #10: Sin urgencia de cupos (ghost) -->
+          <div class="m-spots-ghost">⚠ Aquí debería ir: "🔴 Quedan 47 cupos — 312 ya registrados"</div>
+          <div class="annotated ann-valor" id="ann-target-10" style="height:0;overflow:visible;margin:0 16px;">
+            <span class="ann-badge h-valor" style="top:-4px;right:-8px;" onclick="openPanel(10)">10</span>
+          </div>
+
+          <!-- ISSUE #6: Beneficios sin jerarquía -->
+          <div class="m-section">
+            <div class="m-section-label">Lo que aprenderás</div>
+            <div class="annotated ann-claridad" id="ann-target-6">
+              <div class="m-benefit-list">
+                <div class="m-benefit"><div class="m-benefit-icon">🏃</div><div><div class="m-benefit-title">Fundamentos de resistencia</div><div class="m-benefit-sub">Bases fisiológicas para mejorar tu rendimiento aeróbico.</div></div></div>
+                <div class="m-benefit"><div class="m-benefit-icon">📊</div><div><div class="m-benefit-title">Lectura de métricas</div><div class="m-benefit-sub">Ritmo, cadencia y zonas de frecuencia cardíaca.</div></div></div>
+                <div class="m-benefit"><div class="m-benefit-icon">👟</div><div><div class="m-benefit-title">Selección de zapatillas</div><div class="m-benefit-sub">Criterios técnicos para elegir el calzado correcto.</div></div></div>
+                <div class="m-benefit"><div class="m-benefit-icon">🧠</div><div><div class="m-benefit-title">Nutrición pre y post carrera</div><div class="m-benefit-sub">Estrategias básicas de alimentación para runners.</div></div></div>
+                <div class="m-benefit"><div class="m-benefit-icon">❓</div><div><div class="m-benefit-title">Sesión Q&A en vivo</div><div class="m-benefit-sub">Pregunta directamente a nuestros expertos.</div></div></div>
+              </div>
+              <span class="ann-badge h-claridad" style="top:-8px;right:-8px;" onclick="openPanel(6)">6</span>
+            </div>
+          </div>
+
+          <!-- ISSUE #5: Ponente sin credenciales -->
+          <div class="m-section" style="padding-top:0;">
+            <div class="m-section-label">Ponente</div>
+            <div class="annotated ann-valor" id="ann-target-5">
+              <div class="m-speaker">
+                <div class="m-speaker-avatar">👤</div>
+                <div>
+                  <div class="m-speaker-name">Carlos Martínez</div>
+                  <div class="m-speaker-role">Entrenador de running · STRYDE Coach</div>
+                  <div class="m-speaker-bio">Apasionado del running con años de experiencia ayudando a corredores a alcanzar sus metas.</div>
+                </div>
+              </div>
+              <span class="ann-badge h-valor" style="top:-8px;right:-8px;" onclick="openPanel(5)">5</span>
+            </div>
+          </div>
+
+          <!-- ISSUE #12: Sin prueba social -->
+          <div class="m-section" style="padding-top:0;">
+            <div class="annotated ann-valor" id="ann-target-12">
+              <div class="m-proof-empty">← Aquí deberían ir testimonios de ediciones anteriores o conteo de asistentes</div>
+              <span class="ann-badge h-valor" style="top:-8px;right:-8px;" onclick="openPanel(12)">12</span>
+            </div>
+          </div>
+
+          <!-- FORM: issues #8 #4 #9 -->
+          <div class="m-form-section">
+            <div class="m-form-title">Reserva tu lugar</div>
+            <div class="m-form-sub">Acceso gratuito · Cupos limitados · Certificado de asistencia</div>
+
+            <!-- ISSUE #8: Demasiados campos -->
+            <div class="annotated ann-friccion" id="ann-target-8">
+              <div class="m-form-group">
+                <label class="m-form-label">Nombre <span class="req">*</span></label>
+                <input class="m-form-input" type="text" placeholder="Tu nombre">
+              </div>
+              <div class="m-form-group">
+                <label class="m-form-label">Apellido <span class="req">*</span></label>
+                <input class="m-form-input" type="text" placeholder="Tu apellido">
+              </div>
+              <div class="m-form-group">
+                <label class="m-form-label">Correo electrónico <span class="req">*</span></label>
+                <input class="m-form-input" type="email" placeholder="tu@correo.com" inputmode="email">
+              </div>
+              <div class="m-form-group">
+                <label class="m-form-label">Teléfono <span class="req">*</span></label>
+                <input class="m-form-input" type="tel" placeholder="+57 300 000 0000" inputmode="tel">
+              </div>
+              <div class="m-form-group">
+                <label class="m-form-label">Ciudad <span class="req">*</span></label>
+                <input class="m-form-input" type="text" placeholder="Ciudad de residencia">
+              </div>
+              <div class="m-form-group">
+                <label class="m-form-label">Nivel de running <span class="req">*</span></label>
+                <select class="m-form-select">
+                  <option value="">Selecciona tu nivel</option>
+                  <option>Principiante (0–5 km)</option>
+                  <option>Intermedio (5–15 km)</option>
+                  <option>Avanzado (15–42 km)</option>
+                </select>
+              </div>
+              <div class="m-form-group">
+                <label class="m-form-label">¿Cómo nos conociste?</label>
+                <select class="m-form-select">
+                  <option value="">Selecciona una opción</option>
+                  <option>Instagram</option><option>Google</option><option>Email</option>
+                </select>
+              </div>
+              <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(8)">8</span>
+            </div>
+
+            <div class="m-form-checkbox">
+              <input type="checkbox" id="cb1">
+              <label for="cb1">Acepto recibir comunicaciones de STRYDE sobre este webinar y futuros eventos.</label>
+            </div>
+
+            <!-- ISSUE #4: CTA genérico -->
+            <div class="annotated ann-friccion" id="ann-target-4">
+              <button class="m-form-cta">Registrarse</button>
+              <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(4)">4</span>
+            </div>
+
+            <!-- ISSUE #9: Sin política de privacidad -->
+            <div class="annotated ann-friccion" id="ann-target-9">
+              <div class="m-form-disclaimer">Al registrarte, aceptas nuestros términos de uso.</div>
+              <span class="ann-badge h-friccion" style="top:-8px;right:-8px;" onclick="openPanel(9)">9</span>
+            </div>
+
+            <!-- ISSUE ghost: sin add to calendar -->
+            <div class="m-cal-ghost">⚠ Aquí debería ir "+ Agregar al calendario" — ausente</div>
+            <div class="annotated ann-friccion" id="ann-target-lp-cal" style="height:0;overflow:visible;"></div>
+
+          </div>
+
+          <div style="height:30px;"></div>
+
+        </div><!-- /phone-scroll -->
+
+        <!-- ISSUE #2: Sticky CTA debería ir al fondo — ausente -->
+        <div class="annotated ann-friccion" id="ann-target-sticky" style="position:absolute;bottom:0;left:0;right:0;height:0;overflow:visible;">
+          <!-- ghost se maneja abajo -->
+        </div>
+
+      </div><!-- /phone-inner -->
+    </div><!-- /phone-frame -->
+  </div>
+
+</div><!-- /phone-scene -->
+
+<!-- TOOLBAR -->
+<div id="lab-toolbar">
+  <span class="tb-label">🔬 LAB — LANDING WEBINAR MOBILE</span>
+  <div class="tb-sep"></div>
+  <button id="toggle-btn" onclick="toggleAnnotations()"><div class="t-dot"></div> Ver anotaciones</button>
+</div>
+
+<script>
+const annotations = {
+  1:{heuristic:"Claridad",color:"#D97706",mobileSpecific:false,section:"Headline genérico — no comunica el resultado concreto del webinar",problema:"'Corre mejor. Entrena con propósito.' es aspiracional pero completamente vago. No responde qué aprenderás exactamente ni cuál es el outcome concreto de asistir. El headline de una landing de registro es el elemento con mayor impacto en la tasa de conversión — si no convence en 3 segundos, el usuario no sigue leyendo.",hipotesis:"Reemplazar por headline orientado a outcome: 'Cómo bajar tu marca en 10K sin aumentar el volumen de entrenamiento' o 'Los 4 errores que frenan a los runners intermedios — y cómo corregirlos en 8 semanas'. El visitante debe poder visualizar exactamente qué se lleva al terminar.",mobileNote:"En mobile el headline es prácticamente lo único visible en el primer viewport, sin los elementos de contexto que rodean al texto en desktop. Si el headline no convence solo, la mayoría de usuarios nunca harán scroll.",severidad:3},
+  2:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:true,section:"CTA del hero debajo del fold — no visible sin hacer scroll",problema:"En un iPhone con pantalla de 390px, el hero tiene: badge + headline 2 líneas + subtítulo + 4 pills de meta + botón CTA. El CTA 'Registrarse' queda en la parte baja del hero, posiblemente ya fuera del viewport inicial. El usuario que llega a la LP desde un anuncio puede no ver el CTA sin hacer scroll.",hipotesis:"(1) Reducir el contenido del hero para asegurar que el CTA sea visible en el first fold. Prioridad del viewport: headline → subtítulo de 1 línea → CTA. (2) Agregar barra sticky inferior con CTA que aparezca a los 100px de scroll. (3) Simplificar las pills de meta a solo 2 (fecha y hora) para liberar espacio.",mobileNote:"En desktop el hero tiene ancho suficiente para distribuir contenido sin empujar el CTA fuera del viewport. En mobile, cada línea de texto ocupa 100% del ancho — el contenido apila verticalmente y empuja el CTA hacia abajo con mucha más facilidad.",severidad:3},
+  3:{heuristic:"Claridad",color:"#D97706",mobileSpecific:false,section:"Hora del evento sin zona horaria explícita",problema:"'7:00 PM' sin zona horaria genera ambigüedad real para usuarios de diferentes países o ciudades. Para un webinar online con audiencia potencialmente en Colombia, México, Argentina y España, la diferencia horaria puede ser de hasta 6 horas. Un asistente que interpreta mal la hora se conecta en el momento equivocado o no se conecta.",hipotesis:"Siempre incluir zona horaria: '7:00 PM (COT · UTC−5)'. Para audiencia multinacional, agregar conversión: '7 PM Bogotá / 8 PM Lima / 9 PM Buenos Aires'. En el email de confirmación, personalizar la hora según zona del registro. Pequeño cambio, alto impacto en asistencia efectiva.",mobileNote:"En mobile las pills son compactas y hay presión por reducir texto — la zona horaria es frecuentemente lo primero que se recorta. Es un error: sin ella, el dato de hora es incompleto para cualquier usuario fuera de la ciudad del organizador.",severidad:2},
+  4:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:false,section:"CTA del formulario 'Registrarse' — mecánico, sin reforzar valor",problema:"'Registrarse' describe el trámite, no el beneficio. En el contexto de un evento gratuito, el CTA es la última fricción antes de la conversión. Debe ser el cierre emocional y racional de la propuesta de valor — no un botón de formulario genérico.",hipotesis:"Cambiar a CTA orientado a beneficio: 'Quiero mi lugar gratis →' o 'Asegurar mi cupo en el webinar'. Si hay urgencia: 'Reservar mi lugar (quedan 47)'. El CTA debe hacer que el usuario sienta que está obteniendo algo valioso, no completando un trámite.",mobileNote:"En mobile el botón ocupa toda la anchura de la pantalla y es el elemento más prominente del form. Que el texto del botón más visible de toda la pantalla diga 'Registrarse' en lugar de comunicar valor es una oportunidad perdida de alto impacto.",severidad:3},
+  5:{heuristic:"Propuesta de Valor",color:"#059669",mobileSpecific:false,section:"Ponente sin credenciales verificables ni logros concretos",problema:"'Entrenador de running · STRYDE Coach · apasionado del running con años de experiencia' no genera confianza verificable. No hay números: ¿cuántos atletas entrenados? ¿certificaciones específicas (IAAF, USATF)? ¿cuántos maratones completados? Sin datos concretos, la credibilidad del ponente parece auto-declarada.",hipotesis:"Reemplazar con credenciales específicas: 'Carlos Martínez · Coach certificado IAAF Nivel 2 · +800 runners entrenados · 14 maratones (mejor marca 2h47) · Ex Federación Colombiana de Atletismo'. Un ponente con credenciales concretas puede incrementar la tasa de registro entre 15–25%.",mobileNote:"En mobile la tarjeta del ponente es pequeña y el avatar es un placeholder genérico. En esas condiciones, las credenciales textuales concretas son la única fuente de confianza disponible — si son vagas, no construyen nada.",severidad:2},
+  6:{heuristic:"Claridad",color:"#D97706",mobileSpecific:false,section:"Beneficios listados sin jerarquía — todos con el mismo peso visual",problema:"Los 5 beneficios son visualmente idénticos: mismo ícono, mismo fondo, misma tipografía. No hay señal de cuál es el más valioso. El beneficio más diferenciador para la decisión (ej: 'Q&A en vivo' o 'Plan de entrenamiento personalizado') se pierde entre los demás como si fuera equivalente a 'Nutrición básica'.",hipotesis:"Destacar el benefit principal con background diferente, badge 'Exclusivo' o mayor tamaño. El orden importa: el primero y el último son los más recordados (efecto serial position). Poner el beneficio más fuerte primero, el segundo más fuerte al final. Los intermedios pueden ser más compactos.",mobileNote:"En mobile los beneficios son una lista vertical que el usuario scrollea. Sin jerarquía, los 5 items se perciben como un bloque uniforme que el usuario puede decidir no leer completo. El primero es el único que se garantiza que verán.",severidad:2},
+  7:{heuristic:"Distracción",color:"#7C3AED",mobileSpecific:true,section:"Nav completo con rutas de fuga en una LP de conversión",problema:"El nav tiene 4 elementos interactivos: logo linkeable, ícono de búsqueda, ícono de carrito. Cada uno es una ruta de salida de la landing antes de que el usuario se registre. En mobile, un tap accidental en el logo o el carrito saca al usuario de la LP sin posibilidad de recuperación.",hipotesis:"En LP de campaña: eliminar el nav completo. Mantener solo el logo como elemento visual no interactivo. Si se necesita un punto de retorno, usar un botón 'Volver a STRYDE' al final de la página, no en el header. Un nav completo en LP puede costar entre 10–30% de las conversiones.",mobileNote:"En mobile los tapeos accidentales son más frecuentes que los clicks accidentales en desktop. El logo en el header está justo en la zona del thumb en pantallas de 390px — un tap al intentar desplazarse puede llevarte al homepage.",severidad:3},
+  8:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:true,section:"Formulario de 7 campos en mobile — máxima fricción de entrada",problema:"Nombre, apellido, email, teléfono, ciudad, nivel de running y fuente de adquisición en mobile significan: abrir el teclado 5–6 veces, navegar entre campos táctiles, esperar que el autocomplete funcione correctamente, y completar un flujo de 3–4 minutos para un evento gratuito. Cada campo extra reduce la conversión entre 3–5%.",hipotesis:"Para primer registro gratuito en mobile: usar máximo 2 campos (email + nombre). Los datos adicionales se capturan post-registro: en el email de confirmación ('Completa tu perfil'), en el onboarding de la plataforma del webinar, o como campos opcionales en un segundo paso. La regla: proporcional al valor ofrecido.",mobileNote:"En desktop 7 campos en un form de dos columnas no se percibe como excesivo — se ven todos simultáneamente. En mobile, 7 campos son 7 interacciones táctiles con el teclado virtual subiendo y bajando. La fricción física es exponencialmente mayor.",severidad:3},
+  9:{heuristic:"Fricción",color:"#DC2626",mobileSpecific:false,section:"Sin política de privacidad visible junto al formulario",problema:"'Al registrarte, aceptas nuestros términos de uso' sin link a la política de privacidad genera desconfianza en usuarios conscientes de sus datos. Particularmente relevante cuando se pide teléfono: ¿para qué? ¿quién lo recibe? ¿lo comparten? Sin respuesta visible, muchos usuarios abandonan el formulario en el campo de teléfono.",hipotesis:"Junto al campo de email: 'Tus datos están protegidos · Ver política de privacidad [link]'. Para el campo de teléfono: pequeña nota '¿Para qué usamos tu teléfono? Para enviarte el recordatorio del webinar.' La transparencia en el manejo de datos aumenta la tasa de completitud del formulario.",mobileNote:"En mobile el espacio es limitado y las notas de privacidad tienden a omitirse para 'no recargar' la UI. Pero la ausencia de privacidad visible en formularios con teléfono es una de las causas más frecuentes de abandono — especialmente entre usuarios más jóvenes.",severidad:2},
+  10:{heuristic:"Propuesta de Valor",color:"#059669",mobileSpecific:false,section:"Sin indicador de cupos — urgencia completamente ausente",problema:"Si los cupos son limitados, no comunicarlo es desperdiciar el principal gatillador de urgencia de una LP de registro. Sin '🔴 Quedan 47 cupos' visible sobre el formulario, el usuario no tiene señal de que debe actuar ahora. Puede dejar el registro para después — y 'después' frecuentemente significa no registrarse.",hipotesis:"Agregar sobre el CTA o el formulario: '🔴 Cupos limitados · 47 de 200 disponibles' con barra de progreso visual. Si los cupos no son realmente limitados, usar urgencia temporal: 'Registro abierto hasta el 12 de mayo'. Agregar también: '✅ 312 personas ya registradas' como social proof de urgencia.",mobileNote:"En mobile el usuario ya venció la fricción de navegar a la LP desde un anuncio o email. La urgencia es el catalizador que convierte esa visita en registro en esa misma sesión, en lugar de posponer la acción para cuando estén frente al computador.",severidad:2},
+  11:{heuristic:"Distracción",color:"#7C3AED",mobileSpecific:true,section:"Logo linkeable — ruta de fuga silenciosa en el header",problema:"El logo de STRYDE en el header es un link al homepage. En mobile, el logo está en la zona superior izquierda de la pantalla — área de alta interacción al intentar hacer scroll o al cambiar el agarre del teléfono. Un tap accidental saca al usuario de la LP sin aviso.",hipotesis:"En LP de campaña: desactivar el link del logo (href='#' o sin href). El logo puede ser un elemento visual de branding sin ser un punto de salida. Si el usuario quiere ir al homepage, usará el botón de retroceso del navegador — no necesita un link en el logo.",mobileNote:"En desktop el logo está en la esquina superior izquierda, zona de baja interacción accidental. En mobile, especialmente al intentar scrollear con el pulgar izquierdo, el logo es fácilmente tapeable de forma involuntaria — generando salidas no intencionales de la LP.",severidad:2},
+  12:{heuristic:"Propuesta de Valor",color:"#059669",mobileSpecific:false,section:"Sin prueba social — testimonios ni conteo de asistentes registrados",problema:"No hay ninguna señal de que otras personas hayan asistido a ediciones anteriores del webinar y lo hayan encontrado valioso, ni de que muchas personas ya estén registradas para esta edición. Sin prueba social, el visitante debe confiar en la descripción de STRYDE sobre su propio evento — lo menos persuasivo posible.",hipotesis:"(1) 2–3 testimonios específicos de ediciones anteriores con nombre, foto y resultado concreto: '\"Bajé 4 minutos en mi 10K en 6 semanas.\" — Valentina R., Bogotá'. (2) Contador de registros: '✅ 312 personas ya registradas'. (3) Badge de historial: '3ra edición · +1.200 asistentes en 2025'. La prueba social puede incrementar la conversión entre 20–40%.",mobileNote:"En mobile la prueba social en texto compacto ocupa poco espacio pero genera mucho impacto. Un testimonio de 2 líneas con nombre y resultado concreto es uno de los elementos de mayor ROI disponibles en una LP mobile.",severidad:3}
+};
+
+let annotationsActive=false,currentAnn=1;
+function toggleAnnotations(){
+  annotationsActive=!annotationsActive;
+  document.body.classList.toggle('annotations-on',annotationsActive);
+  const btn=document.getElementById('toggle-btn');
+  btn.classList.toggle('on',annotationsActive);
+  btn.innerHTML=`<div class="t-dot"></div> ${annotationsActive?'Ocultar anotaciones':'Ver anotaciones'}`;
+  const sidebar=document.getElementById('issues-sidebar');
+  sidebar.classList.toggle('visible',annotationsActive);
+  if(annotationsActive&&sidebar.children.length<2)buildSidebar();
+}
+function buildSidebar(){
+  const sidebar=document.getElementById('issues-sidebar');
+  Object.entries(annotations).forEach(([num,d])=>{
+    const el=document.createElement('div');
+    el.className='issue-chip'+(d.mobileSpecific?' mobile-specific':'');
+    el.onclick=()=>openPanel(Number(num));
+    el.innerHTML=`<div class="chip-num" style="background:${d.color}">${num}</div><div><div class="chip-heuristic">${d.heuristic}</div><div class="chip-section">${d.section}</div>${d.mobileSpecific?'<div class="chip-mobile-label">📱 Mobile específico</div>':''}</div>`;
+    sidebar.appendChild(el);
+  });
+}
+function openPanel(num){
+  currentAnn=num;
+  const d=annotations[num];
+  document.getElementById('p-num').textContent='#'+num;
+  const chip=document.getElementById('p-chip');chip.textContent=d.heuristic;chip.style.background=d.color;
+  document.getElementById('p-mobile-badge').style.display=d.mobileSpecific?'inline-flex':'none';
+  document.getElementById('p-section').textContent=d.section;
+  document.getElementById('p-problema').textContent=d.problema;
+  document.getElementById('p-hipotesis').textContent=d.hipotesis;
+  const mn=document.getElementById('p-mobile-note');
+  if(d.mobileNote){mn.style.display='block';document.getElementById('p-mobile-note-text').textContent=d.mobileNote;}else{mn.style.display='none';}
+  const sevDiv=document.getElementById('p-sev');sevDiv.innerHTML='';
+  for(let i=1;i<=3;i++){const pip=document.createElement('div');pip.className='sev-pip';pip.style.background=i<=d.severidad?d.color:'#eee';sevDiv.appendChild(pip);}
+  sevDiv.insertAdjacentHTML('beforeend',`<span style="font-size:12px;color:#aaa;margin-left:8px;">${d.severidad===3?'Alta':d.severidad===2?'Media':'Baja'}</span>`);
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+  document.getElementById('ann-target-'+num)?.querySelector('.ann-badge')?.classList.add('active-badge');
+  document.getElementById('ann-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePanel(){
+  document.getElementById('ann-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.ann-badge').forEach(b=>b.classList.remove('active-badge'));
+}
+function nav(dir){
+  const keys=Object.keys(annotations).map(Number);
+  let idx=keys.indexOf(currentAnn)+dir;
+  if(idx<0)idx=keys.length-1;if(idx>=keys.length)idx=0;
+  openPanel(keys[idx]);
+}
+</script>
+</body>
+</html>
